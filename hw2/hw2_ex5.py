@@ -5,7 +5,9 @@ import numpy as np
 #         using the Euler method.
 
 
-def balle(tau = .1, get_input = False, calc_error = False, plot_energy = True, midpoint = False, airFlag = False):
+def balle(theta = 45,tau = .01, get_input = False, calc_error = False, 
+          plot_trajectory = False, plot_energy = False, midpoint = True, 
+          airFlag = False, verbose = False):
     
     
     # Get input values from input prompts
@@ -18,7 +20,7 @@ def balle(tau = .1, get_input = False, calc_error = False, plot_energy = True, m
         tau = float(input("Enter timestep, tau (sec): "));  # (sec)
     else:
         # Set default initial conditions for experimenting with tau
-        y1 = 0.0
+        y1 = 1.0
         speed = 50.0
         theta = 45.0
 
@@ -49,24 +51,24 @@ def balle(tau = .1, get_input = False, calc_error = False, plot_energy = True, m
         #* Record position (computed and theoretical) for plotting
         t = (istep)*tau     # Current time
         if(istep ==0):
-            xplot = np.array(r[0])   # Record trajectory for plot
-            yplot = np.array(r[1])
-            xNoAir = np.array(r[0])
-            yNoAir = np.array(r[1])
-            time = np.array(t)
+            xplot = [r[0]]   # Record trajectory for plot
+            yplot = [r[1]]
+            xNoAir = [r[0]]
+            yNoAir = [r[1]]
+            time = [t]
             velocity = np.array(v)
         else:
-            xplot = np.append(xplot,r[0,0])   # Record trajectory for plot
-            yplot = np.append(yplot,r[0,1])
-            xNoAir = np.append(xNoAir,r1[0] + v1[0]*t)   # Record trajectory for plot
-            yNoAir = np.append(yNoAir,r1[1] + v1[1]*t - 0.5*grav*t**2)   
+            xplot.append(r[0,0])   # Record trajectory for plot
+            yplot.append(r[0,1])
+            xNoAir.append(r1[0] + v1[0]*t)   # Record trajectory for plot
+            yNoAir.append(r1[1] + v1[1]*t - 0.5*grav*t**2)   
              
         #* Calculate the acceleration of the ball 
         accel = air_const*np.linalg.norm(v)*v   # Air resistance
         accel[1] = accel[1]-grav      # Gravity
     
         #* Calculate the new position and velocity using Euler method
-        if ~midpoint:
+        if not midpoint:
             r = r + (tau)*(v.T)                 # Euler step
             v = v + tau*accel
         else:
@@ -74,7 +76,7 @@ def balle(tau = .1, get_input = False, calc_error = False, plot_energy = True, m
             r = r + (tau/2)*(v+v_new).T  #Midpoint method
             v = v_new #Midpoitn method
             
-        time = np.append(time,t)
+        time.append(t)
         velocity = np.concatenate((velocity,v),axis=1)
         #* If ball reaches ground (y<0), break out of the loop
         if( r[0,1] < 0 ):  
@@ -87,24 +89,26 @@ def balle(tau = .1, get_input = False, calc_error = False, plot_energy = True, m
     x_end = np.interp(0,yplot[-3:],xplot[-3:]) # Note use interpf
     t_end = np.interp(0,yplot[-3:],time[-3:])    
     
-    # Print maximum range and time of flight
-    print('Maximum range is ',x_end,' meters');
-    print('Time of flight is ',t_end,' seconds');
+    if verbose:
+        # Print maximum range and time of flight
+        print('Maximum range is ',x_end,' meters');
+        print('Time of flight is ',t_end,' seconds');
     
-    # Graph the trajectory of the baseball
-    plt.figure(0)
-    # Mark the location of the ground by a straight line
-    xground = np.array([0, np.max(xNoAir)]);  yground = np.array([0, 0]);
-    # Plot the computed trajectory and parabolic, no-air curve
-    plt.plot(xplot,yplot,'.')
-    plt.plot(xNoAir,yNoAir,'--');
-    plt.plot(xground,yground,'-');
-    plt.legend(['Euler method','Theory (No air)']);
-    plt.xlabel('Range (m)');  plt.ylabel('Height (m)');
-    plt.title('Projectile motion, tau = %s' % tau);
-    #axis equal; shg; # reset the aspect ratio, bring the plot to the front
-    plt.grid(True)
-    plt.show()
+    if plot_trajectory:
+        # Graph the trajectory of the baseball
+        plt.figure(0)
+        # Mark the location of the ground by a straight line
+        xground = np.array([0, np.max(xNoAir)]);  yground = np.array([0, 0]);
+        # Plot the computed trajectory and parabolic, no-air curve
+        plt.plot(xplot,yplot,'.')
+        plt.plot(xNoAir,yNoAir,'--');
+        plt.plot(xground,yground,'-');
+        plt.legend(['Euler method','Theory (No air)']);
+        plt.xlabel('Range (m)');  plt.ylabel('Height (m)');
+        plt.title('Projectile motion, tau = %s' % tau);
+        #axis equal; shg; # reset the aspect ratio, bring the plot to the front
+        plt.grid(True)
+        plt.show()
     
     if plot_energy:
         plt.figure(1)
@@ -117,10 +121,14 @@ def balle(tau = .1, get_input = False, calc_error = False, plot_energy = True, m
         plt.legend(['potential energy','kinetic energy','total energy'])
     
     
-    return velocity
+    return velocity,x_end,t_end
     
 
 
 if __name__ == '__main__':
-    for i in [1,.5,.1,.05,.01,.005]:
-        v = balle(tau = i)
+    range_list = []
+    theta_range = np.linspace(10,50,1)
+    for i in theta_range:
+        v,r,t = balle(theta = i)
+        range_list.append((i,r))
+    print(max(range_list))

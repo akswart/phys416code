@@ -66,7 +66,7 @@ def balle(tau = .1, get_input = False, calc_error = False, plot_energy = True, m
         accel[1] = accel[1]-grav      # Gravity
     
         #* Calculate the new position and velocity using Euler method
-        if ~midpoint:
+        if not midpoint:
             r = r + (tau)*(v.T)                 # Euler step
             v = v + tau*accel
         else:
@@ -88,6 +88,7 @@ def balle(tau = .1, get_input = False, calc_error = False, plot_energy = True, m
     t_end = np.interp(0,yplot[-3:],time[-3:])    
     
     # Print maximum range and time of flight
+    print("For tau = %s" % tau)
     print('Maximum range is ',x_end,' meters');
     print('Time of flight is ',t_end,' seconds');
     
