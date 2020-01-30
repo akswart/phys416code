@@ -5,7 +5,7 @@ import numpy as np
 #         using the Euler method.
 
 
-def balle(theta = 45,tau = .01, get_input = False, calc_error = False, 
+def balle(theta = 45,tau = .001, get_input = False, calc_error = False, 
           plot_trajectory = False, plot_energy = False, midpoint = True, 
           airFlag = False, verbose = False):
     
@@ -20,9 +20,9 @@ def balle(theta = 45,tau = .01, get_input = False, calc_error = False,
         tau = float(input("Enter timestep, tau (sec): "));  # (sec)
     else:
         # Set default initial conditions for experimenting with tau
-        y1 = 1.0
+        y1 = 0.0
         speed = 50.0
-        theta = 45.0
+        #theta = 45.0
 
         
         
@@ -82,7 +82,7 @@ def balle(theta = 45,tau = .01, get_input = False, calc_error = False,
         if( r[0,1] < 0 ):  
             xplot = np.append(xplot,r[0,0]);   # Record trajectory for plot
             yplot = np.append(yplot,r[0,1]);
-            #time = np.append(time,t)
+            time = np.array(time)
             break;                  # Break out of the for loop
     
     # Once the ball reaches the ground, interpolate the last 3 points to find accurate endpoints
@@ -127,8 +127,13 @@ def balle(theta = 45,tau = .01, get_input = False, calc_error = False,
 
 if __name__ == '__main__':
     range_list = []
-    theta_range = np.linspace(10,50,1)
+    theta_range = np.linspace(10,50,100)
     for i in theta_range:
         v,r,t = balle(theta = i)
-        range_list.append((i,r))
+        range_list.append(r)
+    #range_list = np.array(range_list)
     print(max(range_list))
+    idx = np.where(range_list == max(range_list))[0][0]
+    
+    print(idx, theta_range[idx],range_list[idx])
+    
