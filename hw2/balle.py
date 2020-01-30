@@ -1,10 +1,8 @@
-0
 # python 3 version
 import matplotlib.pyplot as plt
 import numpy as np
 # balle - Program to compute the trajectory of a baseball
 #         using the Euler method.
-#clear;  help balle;  # Clear memory and print header
 
 
 def balle(tau = .1, get_input = False, calc_error = False, plot_energy = True, midpoint = False):
