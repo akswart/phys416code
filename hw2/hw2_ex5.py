@@ -7,7 +7,7 @@ import numpy as np
 
 def balle(theta = 45,tau = .001, get_input = False, calc_error = False, 
           plot_trajectory = False, plot_energy = False, midpoint = True, 
-          airFlag = False, verbose = False):
+          airFlag = True, verbose = False):
     
     
     # Get input values from input prompts
@@ -20,7 +20,7 @@ def balle(theta = 45,tau = .001, get_input = False, calc_error = False,
         tau = float(input("Enter timestep, tau (sec): "));  # (sec)
     else:
         # Set default initial conditions for experimenting with tau
-        y1 = 0.0
+        y1 = 1.0
         speed = 50.0
         #theta = 45.0
 
@@ -123,20 +123,25 @@ def balle(theta = 45,tau = .001, get_input = False, calc_error = False,
     
     return velocity,x_end,t_end
     
-def run():
+def run(verbose = False):
     range_list = []
     theta_range = np.linspace(10,50,100)
     for i in theta_range:
         v,r,t = balle(theta = i)
         range_list.append(r)
-    #range_list = np.array(range_list)
-    #print(max(range_list))
+    
     idx = np.where(range_list == max(range_list))[0][0]
     
-    #print(idx, theta_range[idx],range_list[idx])
+    if verbose:
+        print(max(range_list))
+        print(idx, theta_range[idx],range_list[idx])
     return idx, theta_range[idx],range_list[idx]
     
 if __name__ == '__main__':
+    run(verbose = True)
+    
+    """
     import timeit
-    t1 = timeit.timeit("run()",setup="from hw2_ex5 import run",number = 1)
+    t1 = timeit.timeit("run()",setup="from hw2_ex5 import run",number = 10)
     print("Time: ",t1)
+    """
