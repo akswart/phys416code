@@ -38,7 +38,7 @@ def balle(theta = 45,tau = .01, get_input = False, calc_error = False,
     mass = 0.145;   # Mass of projectile (kg)
     
     
-    if ~airFlag:
+    if not airFlag:
         rho = 0      # No air resistance
     else: 
         rho = 1.2    # Density of air (kg/m^3)
