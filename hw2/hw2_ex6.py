@@ -1,6 +1,9 @@
 # python 3 version
 import matplotlib.pyplot as plt
 import numpy as np
+
+from exD import interpf_mod # Import modified interpolation function from last homework
+
 # balle - Program to compute the trajectory of a baseball
 #         using the Euler method.
 # Edited for problem #6 to calculate the trajectory for two objects
@@ -8,7 +11,7 @@ import numpy as np
 # but this was quicker to code since I had already vectorized the 1-ball problem a bit differently than the origonal code
 
 
-def balle(theta = [45.0,45.0],tau = .01, get_input = False, calc_error = False, 
+def balle(theta = [45.0,45.0],tau = .001, get_input = False, calc_error = False, 
           plot_trajectory = True, plot_energy = False, midpoint = True, 
           airFlag = True, verbose = False, plot_theory = False):
     
@@ -23,8 +26,8 @@ def balle(theta = [45.0,45.0],tau = .01, get_input = False, calc_error = False,
         tau = float(input("Enter timestep, tau (sec): "));  # (sec)
     else:
         # Set default initial conditions for experimenting with tau
-        y1 = [1.0, 1.0]
-        speed = [20.0,10]
+        y1 = [0.0, 0.0]
+        speed = [10.0,20]
         theta = [45.0,45.0]
 
         
@@ -57,7 +60,7 @@ def balle(theta = [45.0,45.0],tau = .01, get_input = False, calc_error = False,
     air_const = -0.5*Cd*rho*area/mass;  # Air resistance constant
     
     #* Loop until ball hits ground or max steps completed
-    maxstep = 10000;   # Maximum number of steps
+    maxstep = 100000   # Maximum number of steps
     for istep in range(0,maxstep):
         #* Record position (computed and theoretical) for plotting
         t = (istep)*tau     # Current time
@@ -124,30 +127,30 @@ def balle(theta = [45.0,45.0],tau = .01, get_input = False, calc_error = False,
             break
         elif r1[0,1] < 0 and time_idx1 == -1:
             time_idx1 = len(time)-1
-            print(time_idx1)
+            print('b1',time_idx1)
         elif r2[0,1] < 0 and time_idx2 == -1:
             time_idx2 = len(time)-1
-            print(time_idx2)
+            print('b2',time_idx2)
     
     # Once the ball reaches the ground, interpolate the last 3 points to find accurate endpoints
     # Need better timekeeping indexing for 2 balls
     if time_idx1 >= 0:
         # Interpolation for ball 1 if it lands first
-        x_end1 = np.interp(0,yplot1[-3:],xplot1[time_idx1-2:time_idx1+1]) # Note use interpf
-        t_end1 = np.interp(0,yplot1[-3:],time[time_idx1-2:time_idx1+1])    
+        x_end1 = interpf_mod(0,yplot1[time_idx1-2:time_idx1+1],xplot1[time_idx1-2:time_idx1+1]) # Note use interpf
+        t_end1 = interpf_mod(0,yplot1[time_idx1-2:time_idx1+1],time[time_idx1-2:time_idx1+1])    
     else:
         # Interpolation for ball 1 if it lands last or with ball 2
-        x_end1 = np.interp(0,yplot1[-3:],xplot1[-3:])
-        t_end1 = np.interp(0,yplot1[-3:],time[-3:])    
+        x_end1 = interpf_mod(0,yplot1[-3:],xplot1[-3:])
+        t_end1 = interpf_mod(0,yplot1[-3:],time[-3:])    
     
     if time_idx2 >= 0:
         # Interpolation for ball 2 if it lands first
-        x_end2 = np.interp(0,yplot2[-3:],xplot2[time_idx2-2:time_idx2+1]) # Note use interpf
-        t_end2 = np.interp(0,yplot2[-3:],time[time_idx2-2:time_idx2+1])    
+        x_end2 = interpf_mod(0,yplot2[time_idx2-2:time_idx2+1],xplot2[time_idx2-2:time_idx2+1]) # Note use interpf
+        t_end2 = interpf_mod(0,yplot2[time_idx2-2:time_idx2+1],time[time_idx2-2:time_idx2+1])    
     else:
         # Interpolation for ball 2 if it lands last or with ball 1
-        x_end2 = np.interp(0,yplot2[-3:],xplot2[-3:]) # Note use interpf
-        t_end2 = np.interp(0,yplot2[-3:],time[-3:])  
+        x_end2 = interpf_mod(0,yplot2[-3:],xplot2[-3:]) # Note use interpf
+        t_end2 = interpf_mod(0,yplot2[-3:],time[-3:])  
     
     
     if verbose:
@@ -208,11 +211,11 @@ def balle(theta = [45.0,45.0],tau = .01, get_input = False, calc_error = False,
         plt.legend(['potential energy','kinetic energy','total energy'])
     
     
-    return velocity1,x_end1,t_end1
+    return (xplot1,yplot1,x_end1,t_end1,time_idx1),(xplot2,yplot2,x_end2,t_end2,time_idx2)
     
     
 if __name__ == '__main__':
-    v,x,t = balle(plot_trajectory = True, midpoint = True, airFlag = True, verbose = True)
+    b1,b2 = balle(plot_trajectory = True, midpoint = True, airFlag = True, verbose = True)
     
     
     
