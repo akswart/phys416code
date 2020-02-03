@@ -11,7 +11,7 @@ from exD import interpf_mod # Import modified interpolation function from last h
 # but this was quicker to code since I had already vectorized the 1-ball problem a bit differently than the origonal code
 
 
-def balle(theta = [45.0,45.0],tau = .001, get_input = False, calc_error = False, 
+def balle(theta = [45.0,45.0],tau = .01, Cd = .5, get_input = False, calc_error = False, 
           plot_trajectory = True, plot_energy = False, midpoint = True, 
           airFlag = True, verbose = False, plot_theory = False):
     
@@ -26,9 +26,9 @@ def balle(theta = [45.0,45.0],tau = .001, get_input = False, calc_error = False,
         tau = float(input("Enter timestep, tau (sec): "));  # (sec)
     else:
         # Set default initial conditions for experimenting with tau
-        y1 = [0.0, 0.0]
-        speed = [10.0,20]
-        theta = [45.0,45.0]
+        y1 = [100.0, 100.0]
+        speed = [10.0,10]
+        theta = [0,0]
 
         
         
@@ -44,7 +44,7 @@ def balle(theta = [45.0,45.0],tau = .001, get_input = False, calc_error = False,
     
     #* Set physical parameters (mass, Cd, etc.)
     mass = np.array([100/2.2,1/2.2])   # Mass of projectile (kg)
-    Cd   = 0.5    # Drag coefficient (dimensionless)
+    #Cd   = 0.5    # Drag coefficient (dimensionless)
     density = 7.8e3 # Density of iron (kg/m^3)
     area = np.pi**(1/3)*((3/4)*(mass/density))**(2/3)  # Cross-sectional area of projectile (m^2)
     grav = 9.81    # Gravitational acceleration (m/s^2)
@@ -160,39 +160,31 @@ def balle(theta = [45.0,45.0],tau = .001, get_input = False, calc_error = False,
     
         print('Maximum range of ball 2 is ',x_end2,' meters') # Ball 2
         print('Time of flight of ball 2 is ',t_end2,' seconds')
-        
+      
     if plot_trajectory:
         # Graph the trajectory of both balls
         plt.figure(0)
-        # Mark the location of the ground by a straight line
-        xground1 = np.array([0, np.max(xNoAir1)])  
-        yground1 = np.array([0, 0])
-        
-        xground2 = np.array([0, np.max(xNoAir2)])  
-        yground2 = np.array([0, 0])
         
         # Plot the computed trajectory and parabolic, no-air curve
         
         # ball 1
-        plt.plot(xplot1,yplot1,'.')
-        
-        if plot_theory:
-            plt.plot(xNoAir1,yNoAir1,'--')
-
+        plt.plot(time,yplot1,'-X')
         # Ball 2
-        plt.plot(xplot2,yplot2,'.')
-        
-        if plot_theory:
-            plt.plot(xNoAir2,yNoAir2,'--')
-        
-        # Plot the ground
-        plt.plot(xground1,yground1,'-')
-        plt.plot(xground2,yground2,'-')
+        plt.plot(time,yplot2,'-o',markersize=1)
 
         if plot_theory:
-            plt.legend(['Ball 1','Theory Ball 1 (No air)', 'Ball 2','Theory Ball 2 (No air)'])
+            # Part b
+            lin_t = np.linspace(0,max(time),1000)
+            b1 = Cd*rho*area[0]/(2*mass[0])
+            b2 = Cd*rho*area[1]/(2*mass[1])
+            exact1 = y1[0] - (1/b1)*np.log(np.cosh(np.sqrt(b1*grav)*lin_t))
+            exact2 = y1[1] - (1/b2)*np.log(np.cosh(np.sqrt(b2*grav)*lin_t))
+            
+            plt.plot(lin_t,exact1)
+            plt.plot(lin_t,exact2)            
+            plt.legend(['Ball 1', 'Ball 2','Theory Ball 1 (No air)','Theory Ball 2 (No air)'])
         else:
-            plt.legend(['Ball 1', 'Ball 2']);
+            plt.legend(['Ball 1 (100lb)', 'Ball 2 (1lb)']);
 
         plt.xlabel('Range (m)');  plt.ylabel('Height (m)');
         plt.title('Projectile motion, tau = %s' % tau);
@@ -215,10 +207,10 @@ def balle(theta = [45.0,45.0],tau = .001, get_input = False, calc_error = False,
     
     
 if __name__ == '__main__':
-    b1,b2 = balle(plot_trajectory = True, midpoint = True, airFlag = True, verbose = True)
-    
-    
-    
+    # Part a,b
+    b1,b2 = balle(plot_trajectory = True, midpoint = True, airFlag = True, verbose = True, plot_theory=True)
+    # Part c
+    balle(Cd = .7, plot_trajectory = True, midpoint = True, airFlag = True, verbose = True, plot_theory=False)
     
     
     
