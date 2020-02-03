@@ -1,6 +1,8 @@
 # python 3 version
 import matplotlib.pyplot as plt
 import numpy as np
+from exD import interpf_mod # Import interpolation function from last assignment
+
 # balle - Program to compute the trajectory of a baseball
 #         using the Euler method.
 
@@ -86,8 +88,8 @@ def balle(theta = 45,tau = .001, get_input = False, calc_error = False,
             break;                  # Break out of the for loop
     
     # Once the ball reaches the ground, interpolate the last 3 points to find accurate endpoints
-    x_end = np.interp(0,yplot[-3:],xplot[-3:]) # Note use interpf
-    t_end = np.interp(0,yplot[-3:],time[-3:])    
+    x_end = interpf_mod(0,yplot[-3:],xplot[-3:]) # Note use interpf
+    t_end = interpf_mod(0,yplot[-3:],time[-3:])    
     
     if verbose:
         # Print maximum range and time of flight
@@ -138,10 +140,10 @@ def run(verbose = False):
     return idx, theta_range[idx],range_list[idx]
     
 if __name__ == '__main__':
-    run(verbose = True)
+    #run(verbose = True)
     
-    """
+    #"""
     import timeit
     t1 = timeit.timeit("run()",setup="from hw2_ex5 import run",number = 10)
     print("Time: ",t1)
-    """
+    #"""
