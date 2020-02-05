@@ -14,8 +14,8 @@ from exD import interpf_mod # Import interpolation function from last assignment
 #         using the Euler method.
 
 
-def balle(theta = 45,tau = .001, plot_trajectory = False, plot_energy = False, midpoint = True, 
-          airFlag = True, verbose = False, magnus = True):
+def balle(theta = 45,tau = .01, plot_trajectory = False,
+          airFlag = True, verbose = False, magnus = True, dimples = True):
     
     
     # Set default initial conditions
@@ -37,9 +37,9 @@ def balle(theta = 45,tau = .001, plot_trajectory = False, plot_energy = False, m
     area = np.pi*radius**2  # Cross-sectional area of projectile (m^2)
     grav = 9.81    # Gravitational acceleration (m/s^2)
     mass = 0.04593   # Mass of projectile (kg)
-    w = np.array([1,1]) # Relative spin of ball
+    w = np.array([[0,0,1]]) # Relative spin of ball (x,y,z) Rotation is constrained to z-axis so that we only have a 2-D force
     magnus_eff = .2 # S0w/m i.e. the normed magnus "multiplier"
-    S_0 = .2*mass/(np.linalg(w))    
+    S_0 = magnus_eff*mass/(np.linalg.norm(w))    
     
     
     if not airFlag:
@@ -47,10 +47,17 @@ def balle(theta = 45,tau = .001, plot_trajectory = False, plot_energy = False, m
     else: 
         rho = 1.2    # Density of air (kg/m^3)
     
-    air_const = lambda v: -0.5*.5*rho*area/mass if v <= 14  else -0.5*(7/v)*rho*area/mass  # Air resistance constant with variable Cd
-    
+    # If the ball has dimples, then the drag coef decrease inversely to velocity above 14 m/s
+    if dimples:
+        air_const = lambda v: -0.5*.5*rho*area/mass if v <= 14  else -0.5*(7/v)*rho*area/mass  # Air resistance constant with variable Cd
+    else: # If no dimples, then the drag coeff is constant
+        Cd = .5
+        air_const = lambda v: -0.5*Cd*rho*area/mass
+        
+        
+        
     #* Loop until ball hits ground or max steps completed
-    maxstep = 10000   # Maximum number of steps
+    maxstep = 100000   # Maximum number of steps
     for istep in range(0,maxstep):
         #* Record position (computed and theoretical) for plotting
         t = (istep)*tau     # Current time
@@ -71,16 +78,14 @@ def balle(theta = 45,tau = .001, plot_trajectory = False, plot_energy = False, m
         accel = air_const(np.linalg.norm(v))*np.linalg.norm(v)*v   # Air resistance
         accel[1] = accel[1]-grav      # Gravity
         if magnus: # add the effect of the magnus force
-            magnus_force = np.cross((S_0/mass)*w,v)
+            magnus_accel = np.cross((S_0/mass)*w,v.T)
+            accel[0] += magnus_accel[0][0]
+            accel[1] += magnus_accel[0][1]
     
-        #* Calculate the new position and velocity using Euler method
-        if not midpoint:
-            r = r + (tau)*(v.T)                 # Euler step
-            v = v + tau*accel
-        else:
-            v_new = v + tau*accel # Midpoint method
-            r = r + (tau/2)*(v+v_new).T  #Midpoint method
-            v = v_new #Midpoitn method
+        # Use midpoint method by default
+        v_new = v + tau*accel # Midpoint method
+        r = r + (tau/2)*(v+v_new).T  #Midpoint method
+        v = v_new #Midpoitn method
             
         time.append(t)
         velocity = np.concatenate((velocity,v),axis=1)
@@ -97,46 +102,108 @@ def balle(theta = 45,tau = .001, plot_trajectory = False, plot_energy = False, m
     
     if verbose:
         # Print maximum range and time of flight
-        print('Maximum range is ',x_end,' meters');
-        print('Time of flight is ',t_end,' seconds');
+        print("\nFor theta: %s" % theta)
+        print('\tMaximum range is ',x_end,' meters');
+        print('\tTime of flight is ',t_end,' seconds');
+      
+    return velocity,x_end,t_end,xplot,yplot
     
-    if plot_trajectory:
+def plot_trajectories(xplot,yplot,theta,dimples):
+        #if plot_trajectory:
         # Graph the trajectory of the baseball
         plt.figure(0)
         # Mark the location of the ground by a straight line
-        xground = np.array([0, np.max(xNoAir)]);  yground = np.array([0, 0]);
-        # Plot the computed trajectory and parabolic, no-air curve
-        plt.plot(xplot,yplot,'.')
-        plt.plot(xground,yground,'-')
+        xground = np.array([0, max(map(max, xplot_list))*1.2])
+        yground = np.array([0, 0])
+        legend_list = []
+        
+        # Plot the computed trajectories
+        for i in range(len(xplot)):
+            plt.plot(xplot[i],yplot[i],'-')
+            legend_list.append('Golf Ball, theta = %s' % theta[i])
+        
+        plt.xlabel('Range (m)')
+        plt.ylabel('Height (m)')
+        if dimples == 1:
+            plt.title('Projectile motion of golf ball with dimples')
+            plt.legend(legend_list)
+        elif dimples == -1:
+            plt.title('Projectile motion of smooth vs dimpled golf ball')
+            plt.legend(['Dimpled ball','Smooth Ball']) # For comparison, we manually set legend since we know the input
 
-        plt.legend(['Golf Ball'])
-        plt.xlabel('Range (m)');  plt.ylabel('Height (m)');
-        plt.title('Projectile motion, tau = %s' % tau);
+        elif dimples == 0:
+            plt.title('Projectile motion of smooth golf ball')
+            plt.legend(legend_list)
+
+            
+        plt.plot(xground,yground,'-')
         #axis equal; shg; # reset the aspect ratio, bring the plot to the front
         plt.grid(True)
         plt.show()
+        return
     
-    if plot_energy:
-        plt.figure(1)
-        pot_e = yplot*grav*mass
-        kin_e = .5*mass*(np.linalg.norm(velocity,axis=0)**2) 
-        plt.plot(xplot,pot_e)
-        plt.plot(xplot,kin_e)
-        total_e = kin_e+pot_e
-        plt.plot(xplot,total_e)
-        plt.legend(['potential energy','kinetic energy','total energy'])
+def find_theta(verbose,dimple):
+    range_list = []
     
+    theta_range = np.linspace(1,40,100)
+    for i in theta_range:
+        v,r,t,_,_ = balle(theta = i,dimples=dimple)
+        range_list.append(r)
+    idx = np.where(range_list == max(range_list))[0][0]
+    if verbose:
+        print(max(range_list))
+        print("Index:",idx,"\nOptimal Angle:", theta_range[idx], "\nRange at Optimal Angle:", range_list[idx])
     
-    return velocity,x_end,t_end
+    return idx, theta_range[idx],range_list[idx]
+    
     
     
 if __name__ == '__main__':
-    v,r,t = balle(theta = 35,plot_trajectory = True)
-    print(r,t)
+    
+    # Part a
+    
+    theta_list = [1,3,6,12,36,48]
+    xplot_list = []
+    yplot_list = []
+    
+    print("For a golf ball with dimples:")
+    for i in theta_list:
+        v,r,t,xplot,yplot = balle(theta = i,verbose = True,dimples=True)
+        xplot_list.append(xplot)
+        yplot_list.append(yplot)
 
+    plot_trajectories(xplot_list, yplot_list, theta_list, dimples = 1)
+    
+    xplot_list = []
+    yplot_list = []
+    
+    print("_____________________________\nFor a golf ball with a smooth surface:")
+    for i in theta_list:
+        v,r,t,xplot,yplot = balle(theta = i,verbose = True,dimples=False)
+        xplot_list.append(xplot)
+        yplot_list.append(yplot)
 
+    plot_trajectories(xplot_list, yplot_list, theta_list, dimples = 0)
+    
+    # Part b
+    print("\n\n__________________\nPart b")
+    print('Dimpled Ball:')
+    i,theta_dimpled,distance_dimpled = find_theta(True,True)
+    print("Smooth Ball:")
+    i,theta_smooth,distance_smooth = find_theta(True,False)
 
+    # Part c
+    # Same as part b ??
+    # Not really sure what the quesiton is asking here, it really doesn't make sense. 
+    # Seriously, go read it.
+    # maybe plot the maximum ranges to compare??? Might as well.
+    print("\n\n__________________\nPart b")
+    print("See plot")
+    
+    v,r,t,xplot1,yplot1 = balle(theta = theta_dimpled,verbose = False,dimples=True)
+    v,r,t,xplot2,yplot2 = balle(theta = theta_smooth,verbose = False,dimples=False)
 
+    plot_trajectories([xplot1,xplot2], [yplot1,yplot2], [theta_dimpled,theta_smooth], dimples=-1)
 
 
 
