@@ -11,8 +11,8 @@ from exD import interpf_mod # Import modified interpolation function from last h
 # but this was quicker to code since I had already vectorized the 1-ball problem a bit differently than the origonal code
 
 
-def balle(theta = [45.0,45.0],tau = .01, Cd = .5, get_input = False, calc_error = False, 
-          plot_trajectory = True, plot_energy = False, midpoint = True, 
+def balle(theta = [45.0,45.0],tau = .001, Cd = .5, get_input = False, calc_error = False, 
+          plot_trajectory = True, midpoint = True, 
           airFlag = True, verbose = False, plot_theory = False):
     
     
@@ -26,8 +26,8 @@ def balle(theta = [45.0,45.0],tau = .01, Cd = .5, get_input = False, calc_error 
         tau = float(input("Enter timestep, tau (sec): "));  # (sec)
     else:
         # Set default initial conditions for experimenting with tau
-        y1 = [100.0, 100.0]
-        speed = [10.0,10]
+        y1 = [50.0, 50.0]
+        speed = [0.0,0]
         theta = [0,0]
 
         
@@ -48,7 +48,7 @@ def balle(theta = [45.0,45.0],tau = .01, Cd = .5, get_input = False, calc_error 
     density = 7.8e3 # Density of iron (kg/m^3)
     area = np.pi**(1/3)*((3/4)*(mass/density))**(2/3)  # Cross-sectional area of projectile (m^2)
     grav = 9.81    # Gravitational acceleration (m/s^2)
-
+    #print(mass,area)
     time_idx1 = -1 # When the balls hit out of order, these record the index of the time in which the first ball hits
     time_idx2 = -1
     
@@ -57,7 +57,7 @@ def balle(theta = [45.0,45.0],tau = .01, Cd = .5, get_input = False, calc_error 
     else: 
         rho = 1.2    # Density of air (kg/m^3)
     
-    air_const = -0.5*Cd*rho*area/mass;  # Air resistance constant
+    air_const = -0.5*Cd*rho*area/mass  # Air resistance constant
     
     #* Loop until ball hits ground or max steps completed
     maxstep = 100000   # Maximum number of steps
@@ -90,10 +90,10 @@ def balle(theta = [45.0,45.0],tau = .01, Cd = .5, get_input = False, calc_error 
             yNoAir2.append(ri2[1] + vi2[1]*t - 0.5*grav*t**2)  
              
         #* Calculate the acceleration of the ball 
-        accel1 = air_const*np.linalg.norm(v1)*v1   # Air resistance ball 1
+        accel1 = air_const[0]*np.linalg.norm(v1)*v1   # Air resistance ball 1
         accel1[1] = accel1[1]-grav      # Gravity ball 1
        
-        accel2 = air_const*np.linalg.norm(v2)*v2   # Air resistance ball 2
+        accel2 = air_const[1]*np.linalg.norm(v2)*v2   # Air resistance ball 2
         accel2[1] = accel2[1]-grav      # Gravity ball 2
         
     
@@ -127,17 +127,21 @@ def balle(theta = [45.0,45.0],tau = .01, Cd = .5, get_input = False, calc_error 
             break
         elif r1[0,1] < 0 and time_idx1 == -1:
             time_idx1 = len(time)-1
-            print('b1',time_idx1)
+            #print('b1',time_idx1)
         elif r2[0,1] < 0 and time_idx2 == -1:
             time_idx2 = len(time)-1
-            print('b2',time_idx2)
+            #print(yplot1[-1])
+    
+    # Intialize seperation, it will get rewritten unless the balls land together
+    seperation = 0
     
     # Once the ball reaches the ground, interpolate the last 3 points to find accurate endpoints
     # Need better timekeeping indexing for 2 balls
     if time_idx1 >= 0:
         # Interpolation for ball 1 if it lands first
         x_end1 = interpf_mod(0,yplot1[time_idx1-2:time_idx1+1],xplot1[time_idx1-2:time_idx1+1]) # Note use interpf
-        t_end1 = interpf_mod(0,yplot1[time_idx1-2:time_idx1+1],time[time_idx1-2:time_idx1+1])    
+        t_end1 = interpf_mod(0,yplot1[time_idx1-2:time_idx1+1],time[time_idx1-2:time_idx1+1])
+        seperation = interpf_mod(0,yplot2[time_idx1-2:time_idx1+1],yplot1[time_idx1-2:time_idx1+1])
     else:
         # Interpolation for ball 1 if it lands last or with ball 2
         x_end1 = interpf_mod(0,yplot1[-3:],xplot1[-3:])
@@ -147,19 +151,17 @@ def balle(theta = [45.0,45.0],tau = .01, Cd = .5, get_input = False, calc_error 
         # Interpolation for ball 2 if it lands first
         x_end2 = interpf_mod(0,yplot2[time_idx2-2:time_idx2+1],xplot2[time_idx2-2:time_idx2+1]) # Note use interpf
         t_end2 = interpf_mod(0,yplot2[time_idx2-2:time_idx2+1],time[time_idx2-2:time_idx2+1])    
+        seperation = interpf_mod(0,yplot2[time_idx1-2:time_idx1+1],yplot1[time_idx1-2:time_idx1+1])
     else:
         # Interpolation for ball 2 if it lands last or with ball 1
         x_end2 = interpf_mod(0,yplot2[-3:],xplot2[-3:]) # Note use interpf
-        t_end2 = interpf_mod(0,yplot2[-3:],time[-3:])  
-    
+        t_end2 = interpf_mod(0,yplot2[-3:],time[-3:])
+        
     
     if verbose:
         # Print maximum range and time of flight
-        print('Maximum range of ball 1 is ',x_end1,' meters') # Ball 1
-        print('Time of flight of ball 1 is ',t_end1,' seconds')
-    
-        print('Maximum range of ball 2 is ',x_end2,' meters') # Ball 2
-        print('Time of flight of ball 2 is ',t_end2,' seconds')
+        print('\tTime of flight of ball 1 is ',t_end1,' seconds')
+        print('\tTime of flight of ball 2 is ',t_end2,' seconds')
       
     if plot_trajectory:
         # Graph the trajectory of both balls
@@ -174,43 +176,42 @@ def balle(theta = [45.0,45.0],tau = .01, Cd = .5, get_input = False, calc_error 
 
         if plot_theory:
             # Part b
-            lin_t = np.linspace(0,max(time),1000)
+            lin_t = np.linspace(0,max(time),10000)
             b1 = Cd*rho*area[0]/(2*mass[0])
             b2 = Cd*rho*area[1]/(2*mass[1])
             exact1 = y1[0] - (1/b1)*np.log(np.cosh(np.sqrt(b1*grav)*lin_t))
             exact2 = y1[1] - (1/b2)*np.log(np.cosh(np.sqrt(b2*grav)*lin_t))
-            
+            if verbose:
+                print("\n\tExact time ball1:",interpf_mod(0,exact1[-5:],lin_t[-5:]))
+                print("\tExact time ball2:",interpf_mod(0,exact2[-5:],lin_t[-5:]))
+
             plt.plot(lin_t,exact1)
             plt.plot(lin_t,exact2)            
             plt.legend(['Ball 1', 'Ball 2','Theory Ball 1 (No air)','Theory Ball 2 (No air)'])
         else:
             plt.legend(['Ball 1 (100lb)', 'Ball 2 (1lb)']);
 
-        plt.xlabel('Range (m)');  plt.ylabel('Height (m)');
+        plt.xlabel('Time (m)');  plt.ylabel('Height (m)');
         plt.title('Projectile motion, tau = %s' % tau);
 
         plt.grid(True)
         plt.show()
     
-    if plot_energy:
-        plt.figure(1)
-        pot_e1 = yplot1*grav*mass
-        kin_e1 = .5*mass*(np.linalg.norm(velocity1,axis=0)**2) 
-        plt.plot(xplot1,pot_e1)
-        plt.plot(xplot1,kin_e1)
-        total_e1 = kin_e1+pot_e1
-        plt.plot(xplot1,total_e1)
-        plt.legend(['potential energy','kinetic energy','total energy'])
     
-    
-    return (xplot1,yplot1,x_end1,t_end1,time_idx1),(xplot2,yplot2,x_end2,t_end2,time_idx2)
+    return (xplot1,yplot1,x_end1,t_end1,time_idx1),(xplot2,yplot2,x_end2,t_end2,time_idx2),seperation
     
     
 if __name__ == '__main__':
     # Part a,b
-    b1,b2 = balle(plot_trajectory = True, midpoint = True, airFlag = True, verbose = True, plot_theory=True)
+    print("Parts a,b")
+    b1,b2,sep = balle(plot_trajectory = True, midpoint = True, airFlag = True, verbose = True, plot_theory=False)
+    b1,b2,sep = balle(plot_trajectory = True, midpoint = True, airFlag = True, verbose = False, plot_theory=True)
+    print("\n\tBall Seperation (inches) with Cd = .5:", abs(sep)*39.3701)
     # Part c
-    balle(Cd = .7, plot_trajectory = True, midpoint = True, airFlag = True, verbose = True, plot_theory=False)
+    print("\nPart c")
+    b1,b2,sep = balle(Cd = .035, plot_trajectory = False, midpoint = True, airFlag = True, verbose = False, plot_theory=False)
+    print("\tBall Seperation (inches) with Cd = .035:", abs(sep)*39.3701)
+
     
     
     

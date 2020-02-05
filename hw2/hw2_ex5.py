@@ -127,23 +127,23 @@ def balle(theta = 45,tau = .001, get_input = False, calc_error = False,
     
 def run(verbose = False):
     range_list = []
+    
     theta_range = np.linspace(10,50,100)
     for i in theta_range:
         v,r,t = balle(theta = i)
         range_list.append(r)
-    
     idx = np.where(range_list == max(range_list))[0][0]
-    
     if verbose:
         print(max(range_list))
-        print(idx, theta_range[idx],range_list[idx])
+        print("Index:",idx,"\nOptimal Angle:", theta_range[idx], "\nRange at Optimal Angle:", range_list[idx])
+    
     return idx, theta_range[idx],range_list[idx]
     
 if __name__ == '__main__':
-    #run(verbose = True)
+    i,tr,rl = run(verbose = True)
     
-    #"""
+    """
     import timeit
     t1 = timeit.timeit("run()",setup="from hw2_ex5 import run",number = 10)
     print("Time: ",t1)
-    #"""
+    """
