@@ -5,10 +5,8 @@ Created on Wed Feb  5 11:55:57 2020
 @author: akswa
 """
 
-# pendul - Program to compute the motion of a simple pendulum
-# using the Euler or Verlet method
-
-# Select the numerical method to use: Euler or Verlet
+#  Program to compute the motion of a Kapitza’s pendulum
+# using the Verlet method
 
 
 import numpy as np
@@ -63,8 +61,6 @@ def pend(theta0,tau,A0,nstep,NumericalMethod,plotting = False,verbose = False):
     period=np.array([])
     
 
-    
-    
     for istep in range(0,nstep):  
     
         # Record angle and time for plotting
