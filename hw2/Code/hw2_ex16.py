@@ -17,11 +17,6 @@ from scipy.special import ellipk
 
 
 
-
-
-
-
-
 def period_pend(theta0,g_over_L):
 # function to return the exact period for a pendulum of length L
 # usage: period = exact_period(theta0,g_over_L)
