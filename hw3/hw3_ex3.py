@@ -237,6 +237,7 @@ def orbit(input_dict = {},calc_info = False,
     return rplot, thplot
 
 if __name__ == "__main__":
+    # non-elliptical
     input_dict = {
         'r0': 1,
         'v0': 2*np.pi,
@@ -245,3 +246,13 @@ if __name__ == "__main__":
         'NumericalMethod': 2
         }
     rplot, thplot, info = orbit(input_dict, calc_info=True)
+    
+    # elliptical
+    input_dict = {
+        'r0': 1,
+        'v0': 1*np.pi,
+        'nStep': 1100,
+        'tau': .001,
+        'NumericalMethod': 2
+        }
+    #rplot, thplot, info = orbit(input_dict, calc_info=True)
