@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Mon Feb 17 14:22:08 2020
+Created on Thu Feb  6 13:33:08 2020
 
 @author: aswart
 """
@@ -100,6 +100,8 @@ def gravrk(s,t):
 #%  Output
 #%    deriv  Derivatives [dr(1)/dt dr(2)/dt dv(1)/dt dv(2)/dt]
 
+    GM = 4*np.pi**2
+    
 #%* Compute acceleration
     r = np.array([s[0], s[1]])  # Unravel the vector s into position and velocity
     v = np.array([s[2] ,s[3]])
@@ -109,88 +111,156 @@ def gravrk(s,t):
     derivs = np.array([v[0], v[1], accel[0], accel[1]])
     return derivs
 
+def gravrk_ex12(s,t):
+#%  Returns right-hand side of Kepler ODE; used by Runge-Kutta routines
+#%  Inputs
+#%    s      State vector [r(1) r(2) v(1) v(2)]
+#%    t      Time (not used)
+#%  Output
+#%    deriv  Derivatives [dr(1)/dt dr(2)/dt dv(1)/dt dv(2)/dt]
+
+    GM = 4*np.pi**2
+    # Hardcoded in vars since 
+    # Im not sure on an elegant way to add them to function
+    r0 = np.array([1.0,0]) 
+    init_Grav_accel = .01*-GM*r0/np.linalg.norm(r0)**3
+
+#%* Compute acceleration
+    r = np.array([s[0], s[1]])  # Unravel the vector s into position and velocity
+    v = np.array([s[2] ,s[3]])
+    # Gravitational acceleration
+    accel = -GM*r/np.linalg.norm(r)**3 + init_Grav_accel  
+
+#%* Return derivatives [dr(1)/dt dr(2)/dt dv(1)/dt dv(2)/dt]
+    derivs = np.array([v[0], v[1], accel[0], accel[1]])
+    return derivs
+
+
 # orbit - Program to compute the orbit of a comet.
 #clear all;  help orbit;  % Clear memory and print header
 
-# Set initial position and velocity of the comet.
-r0 = float(input("Enter initial radial distance (AU): "))
-# v0 = float(input("Enter initial tangential velocity (AU/yr): "))
-# r0 = 1.0; v0 = np.pi;
-#jag20 2.5.15 modify input to allow 'pi'
-vstr = str(input("Enter initial tangential velocity (AU/yr) as a number or multiple of Pi (e.g.,2*pi): "))
-vinp = vstr.split('*')
-if (vinp[-1].lower() == 'pi'):
-  v0 = float(vinp[0])*np.pi
-else:
-  v0 = float(vinp[0])
-
-r = np.array([r0, 0.]);  v = np.array([0., v0])
-state = np.array([ r[0], r[1], v[0], v[1] ])   # Used by R-K routines
-
-#Set physical parameters (mass, G*M)
-GM = 4*np.pi**2      # Grav. const. * Mass of Sun (au^3/yr^2)
-mass = 1.        # Mass of comet
-adaptErr = 1.e-4 # Error parameter used by adaptive Runge-Kutta
-time = 0.0
-
-#%* Loop over desired number of steps using specified
-#%  numerical method.
-nStep = int(input("Enter number of steps: "))
-tau =  float(input("Enter time step (yr): "))
-NumericalMethod=0
-while(NumericalMethod not in np.array([1,2,3,4,5,6,7])):
-    NumericalMethod = int(input("Choose a number for a numerical method:\n\
- 1-Euler, 2-Euler-Cromer, 3-Runge-Kutta 4-Adaptive R-K: "))
+def orbit(input_dict = {},calc_info = False, plot_momentum = False,
+          inter_input = False, plot_traj = True, plot_energy = False):
+    if inter_input:
+        # Set initial position and velocity of the comet.
+        r0 = float(input("Enter initial radial distance (AU): "))
+        # v0 = float(input("Enter initial tangential velocity (AU/yr): "))
+        vstr = str(input("Enter initial tangential velocity (AU/yr) as a number or multiple of Pi (e.g.,2*pi): "))
         
-for istep in range(0,nStep):
+        # modify input to allow 'pi'
+        vinp = vstr.split('*')
+        if (vinp[-1].lower() == 'pi'):
+          v0 = float(vinp[0])*np.pi
+        else:
+          v0 = float(vinp[0])
+        
+        nStep = int(input("Enter number of steps: "))
+        tau =  float(input("Enter time step (yr): "))
+        NumericalMethod=0
+        while(NumericalMethod not in np.array([1,2,3,4,5,6,7])):
+            NumericalMethod = int(input("Choose a number for a numerical method:\n\
+         1-Euler, 2-Euler-Cromer, 3-Runge-Kutta 4-Adaptive R-K: "))
+    elif input_dict:
+        r0 = input_dict['r0']
+        v0 = input_dict['v0']
+        nStep = input_dict['nStep']
+        tau = input_dict['tau']
+        NumericalMethod = input_dict['NumericalMethod']
+    else:
+        r0 = 1
+        v0 = 2*np.pi
+        nStep = 1000
+        tau = .01
+        NumericalMethod = 3
+    
+    r = np.array([r0, 0.])
+    v = np.array([0., v0])
+    state = np.array([ r[0], r[1], v[0], v[1] ])   # Used by R-K routines
+    
+    #Set physical parameters (mass, G*M)
+    GM = 4*np.pi**2      # Grav. const. * Mass of Sun (au^3/yr^2)
+    mass = 1.        # Mass of comet
+    adaptErr = 1.e-4 # Error parameter used by adaptive Runge-Kutta
+    time = 0.0
+    
+    #%* Loop over desired number of steps using specified
+    #%  numerical method.
+    for istep in range(0,nStep):
+    
+      #%* Record position and energy for plotting.
+      # Initially set the arrays for the first step
+      if istep == 0:
+          rplot = np.linalg.norm(r)
+          thplot = np.arctan2(r[1],r[0])
+          tplot = time
+          kinetic = .5*mass*np.linalg.norm(v)**2
+          potential= - GM*mass/np.linalg.norm(r)
+          momentum = [np.linalg.norm(np.cross(r,mass*v))]
+      else:    
+          rplot = np.append(rplot,np.linalg.norm(r))           #Record position for polar plot
+          thplot = np.append(thplot,np.arctan2(r[1],r[0]))
+          tplot = np.append(tplot,time)
+          kinetic = np.append(kinetic,0.5*mass*np.linalg.norm(v)**2)   # Record energies
+          potential= np.append(potential,- GM*mass/np.linalg.norm(r))
+          momentum.append(np.linalg.norm(np.cross(r, mass*v)))
 
-  #%* Record position and energy for plotting.
-  # Initially set the arrays for the first step
-  if istep == 0:
-      rplot = np.linalg.norm(r)
-      thplot = np.arctan2(r[1],r[0])
-      tplot = time
-      kinetic = .5*mass*np.linalg.norm(v)**2
-      potential= - GM*mass/np.linalg.norm(r)
-  else:    
-      rplot = np.append(rplot,np.linalg.norm(r))           #Record position for polar plot
-      thplot = np.append(thplot,np.arctan2(r[1],r[0]))
-      tplot = np.append(tplot,time)
-      kinetic = np.append(kinetic,0.5*mass*np.linalg.norm(v)**2)   # Record energies
-      potential= np.append(potential,- GM*mass/np.linalg.norm(r))
-  
-  #%* Calculate new position and velocity using desired method.
-  if NumericalMethod == 1 :
-    accel = -GM*r/np.linalg.norm(r)**3
-    r = r + tau*v             # Euler step
-    v = v + tau*accel
-    time = time + tau
-  elif NumericalMethod == 2:
-    accel = -GM*r/np.linalg.norm(r)**3
-    v = v + tau*accel
-    r = r + tau*v             # Euler-Cromer step
-    time = time + tau
-  elif NumericalMethod == 3:
-    state = rk4(state,time,tau,gravrk)
-    r = [state[0], state[1]]   # 4th order Runge-Kutta
-    v = [state[2], state[3]]
-    time = time + tau
-  else:
-    [state, time, tau] = rka(state,time,tau,adaptErr,gravrk)
-    r = [state[0], state[1]]   # Adaptive Runge-Kutta
-    v = [state[2], state[3]]
-  
-#%* Graph the trajectory of the comet.
-plt.figure(1); plt.clf()  #Clear figure 1 window and bring forward
-plt.polar(thplot,rplot,'-')  # Use polar plot for graphing orbit
-plt.xlabel('Distance (AU)')
-plt.grid(True)
+      #%* Calculate new position and velocity using desired method.
+      if NumericalMethod == 1 :
+        accel = -GM*r/np.linalg.norm(r)**3
+        r = r + tau*v             # Euler step
+        v = v + tau*accel
+        time = time + tau
+      elif NumericalMethod == 2:
+        accel = -GM*r/np.linalg.norm(r)**3
+        v = v + tau*accel
+        r = r + tau*v             # Euler-Cromer step
+        time = time + tau
+      elif NumericalMethod == 3:
+        state = rk4(state,time,tau,gravrk_ex12)
+        r = np.array([state[0], state[1]])   # 4th order Runge-Kutta
+        v = np.array([state[2], state[3]])
+        time = time + tau
+      else:
+        [state, time, tau] = rka(state,time,tau,adaptErr,gravrk)
+        r = np.array([state[0], state[1]])   # Adaptive Runge-Kutta
+        v = np.array([state[2], state[3]])
+      # If sometime after first step and theta goes from neg to pos, then we know we've completed an orbit
+ #     if istep != 0 and (thplot[-2:]*[-1,1] > 0).all():
+ #         break
+          
+    #print(thplot[-5:])
+    
+    if plot_traj:
+        #%* Graph the trajectory of the comet.
+        plt.figure(1); plt.clf()  #Clear figure 1 window and bring forward
+        plt.polar(thplot,rplot,'-')  # Use polar plot for graphing orbit
+        plt.xlabel('Distance (AU)')
+        plt.grid(True)
+    
+    if plot_energy:
+        #%* Graph the energy of the comet versus time.
+        plt.figure(2); plt.clf()   # Clear figure 2 window and bring forward
+        totalE = kinetic + potential   # Total energy
+        plt.plot(tplot,kinetic,'-.',tplot,potential,'--',tplot,totalE,'-')
+        #plt.legend('Kinetic','Potential','Total')
+        plt.xlabel('Time (yr)'); plt.ylabel('Energy (M AU^2/yr^2)')
+        plt.grid(True)
+        plt.show()
+        
+    if plot_momentum:
+        # Plots angular momentum as a function of time
+        plt.figure(3)
+        plt.plot(tplot,momentum)
 
-#%* Graph the energy of the comet versus time.
-plt.figure(2); plt.clf()   # Clear figure 2 window and bring forward
-totalE = kinetic + potential   # Total energy
-plt.plot(tplot,kinetic,'-.',tplot,potential,'--',tplot,totalE,'-')
-#plt.legend('Kinetic','Potential','Total')
-plt.xlabel('Time (yr)'); plt.ylabel('Energy (M AU^2/yr^2)')
-plt.grid(True)
-plt.show()
+    return rplot, thplot
+
+if __name__ == "__main__":
+    # non-elliptical
+    input_dict = {
+        'r0': 1,
+        'v0': 2*np.pi,
+        'nStep': 1000,
+        'tau': .01,
+        'NumericalMethod': 3
+        }
+    rplot, thplot  = orbit(input_dict,plot_momentum = True)
