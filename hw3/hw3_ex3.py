@@ -146,7 +146,8 @@ def orbit(input_dict = {},calc_info = False,
         tau = .1
         NumericalMethod = 2
     
-    r = np.array([r0, 0.]);  v = np.array([0., v0])
+    r = np.array([r0, 0.])
+    v = np.array([0., v0])
     state = np.array([ r[0], r[1], v[0], v[1] ])   # Used by R-K routines
     
     #Set physical parameters (mass, G*M)
@@ -194,12 +195,11 @@ def orbit(input_dict = {},calc_info = False,
         [state, time, tau] = rka(state,time,tau,adaptErr,gravrk)
         r = [state[0], state[1]]   # Adaptive Runge-Kutta
         v = [state[2], state[3]]
-        
       # If sometime after first step and theta goes from neg to pos, then we know we've completed an orbit
       if istep != 0 and (thplot[-2:]*[-1,1] > 0).all():
           break
           
-    print(thplot[-5:])
+    #print(thplot[-5:])
     
     if plot_traj:
         #%* Graph the trajectory of the comet.
@@ -220,21 +220,28 @@ def orbit(input_dict = {},calc_info = False,
 
     if calc_info:
         # Period
-        T = time
-        
-        return rplot,thplot,time
-        # eccentricity,
-        # semi-major axis
-        # perihelion
-        # distance
+        T = tplot[-2]
+        # semi-major axis (eq 10)
+        # Or find values along x-axis?
+        a = (T**2*(GM/(4*np.pi**2)))**(1/3)
+        # eccentricity TOp of pg 2??
+        e1 = max(rplot)/a - 1
+        e2 = 1 - min(rplot)/a
+        print(e1,e2)
+        e = (e1+e2)/2
+        # perihelion distance
+        peri = (1-e)*a
+        info = [T,e,peri]
+        return rplot,thplot,info
+
     return rplot, thplot
 
 if __name__ == "__main__":
     input_dict = {
         'r0': 1,
         'v0': 2*np.pi,
-        'nStep': 110,
-        'tau': .01,
+        'nStep': 1100,
+        'tau': .001,
         'NumericalMethod': 2
         }
-    r, th, info = orbit(input_dict, calc_info=True)
+    rplot, thplot, info = orbit(input_dict, calc_info=True)
