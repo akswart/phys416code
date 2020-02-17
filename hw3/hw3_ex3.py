@@ -112,7 +112,8 @@ def gravrk(s,t):
 # orbit - Program to compute the orbit of a comet.
 #clear all;  help orbit;  % Clear memory and print header
 
-def orbit(input_dict = {},inter_input = False, plot_traj = True, plot_energy = False):
+def orbit(input_dict = {},calc_info = False, 
+          inter_input = False, plot_traj = True, plot_energy = False):
     if inter_input:
         # Set initial position and velocity of the comet.
         r0 = float(input("Enter initial radial distance (AU): "))
@@ -217,14 +218,23 @@ def orbit(input_dict = {},inter_input = False, plot_traj = True, plot_energy = F
         plt.grid(True)
         plt.show()
 
+    if calc_info:
+        # Period
+        T = time
+        
+        return rplot,thplot,time
+        # eccentricity,
+        # semi-major axis
+        # perihelion
+        # distance
     return rplot, thplot
 
 if __name__ == "__main__":
     input_dict = {
         'r0': 1,
         'v0': 2*np.pi,
-        'nStep': 15,
-        'tau': .1,
+        'nStep': 110,
+        'tau': .01,
         'NumericalMethod': 2
         }
-    r, th = orbit(input_dict)
+    r, th, info = orbit(input_dict, calc_info=True)
