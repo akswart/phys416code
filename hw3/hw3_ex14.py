@@ -122,13 +122,13 @@ def gravrk_ex14(s,t):
     GM = 4*np.pi**2
     # Hardcoded in vars since 
     # Im not sure on an elegant way to add them to function
-    a = .1
+    alpha = .1
 
 #%* Compute acceleration
     r = np.array([s[0], s[1]])  # Unravel the vector s into position and velocity
     v = np.array([s[2] ,s[3]])
     # Gravitational acceleration
-    Grav_mult = 1-(a/np.linalg.norm(r))
+    Grav_mult = 1-(alpha/np.linalg.norm(r))
     accel = (-GM*r/np.linalg.norm(r)**3)*Grav_mult  
 
 #%* Return derivatives [dr(1)/dt dr(2)/dt dv(1)/dt dv(2)/dt]
@@ -221,7 +221,7 @@ def orbit(input_dict = {},calc_info = False, plot_momentum = False,
         v = np.array([state[2], state[3]])
         time = time + tau
       else:
-        [state, time, tau] = rka(state,time,tau,adaptErr,gravrk)
+        [state, time, tau] = rka(state,time,tau,adaptErr,gravrk_ex14)
         r = np.array([state[0], state[1]])   # Adaptive Runge-Kutta
         v = np.array([state[2], state[3]])
       # If sometime after first step and theta goes from neg to pos, then we know we've completed an orbit
@@ -252,6 +252,11 @@ def orbit(input_dict = {},calc_info = False, plot_momentum = False,
         plt.figure(3)
         plt.plot(tplot,momentum)
 
+    # Given alpha=.1, calculate a
+    alpha = .1
+    a = np.sqrt(1+(GM*mass**2*alpha/(momentum[0]**2)))    
+    
+
     return rplot, thplot
 
 if __name__ == "__main__":
@@ -263,4 +268,7 @@ if __name__ == "__main__":
         'tau': .01,
         'NumericalMethod': 4
         }
+    
+    
+    
     rplot, thplot  = orbit(input_dict,plot_momentum = True)
