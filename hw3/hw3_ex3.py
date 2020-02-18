@@ -168,6 +168,10 @@ def orbit(input_dict = {},calc_info = False,
           tplot = time
           kinetic = .5*mass*np.linalg.norm(v)**2
           potential= - GM*mass/np.linalg.norm(r)
+          perihelion = []
+          aphelion = []
+          orbit_end = 0
+          
       else:    
           rplot = np.append(rplot,np.linalg.norm(r))           #Record position for polar plot
           thplot = np.append(thplot,np.arctan2(r[1],r[0]))
@@ -195,11 +199,33 @@ def orbit(input_dict = {},calc_info = False,
         [state, time, tau] = rka(state,time,tau,adaptErr,gravrk)
         r = [state[0], state[1]]   # Adaptive Runge-Kutta
         v = [state[2], state[3]]
+      
+            # Find perihelion, aphelion
+      if istep >= 2:
+          if rplot[istep-1] > rplot[istep-2] and rplot[istep-1] > rplot[istep]:
+              #if rplot[istep-1] >= min(rplot)-tau and rplot[istep-1] <= min(rplot)+tau:
+              #    perihelion.append( (rplot[istep-1],tplot[istep-1]) )
+              if rplot[istep-1] >= max(rplot)-tau and rplot[istep-1] <= max(rplot)+tau:
+                  aphelion.append( [rplot[istep-1],thplot[istep-1],tplot[istep-1],istep] )
+          elif rplot[istep-1] < rplot[istep-2] and rplot[istep-1] < rplot[istep]:
+              perihelion.append( [rplot[istep-1],thplot[istep-1],tplot[istep-1],istep] )  
+        
+        
       # If sometime after first step and theta goes from neg to pos, then we know we've completed an orbit
       if istep != 0 and (thplot[-2:]*[-1,1] > 0).all():
+          orbit_end = istep
+      if istep >= orbit_end*1.2 and orbit_end != 0:
+          # Just want to compute more than enough of the obit to get accurate perihelion data etc
           break
           
-    #print(thplot[-5:])
+    # Trim data to single orbit
+    rplot = rplot[:orbit_end+1]
+    thplot = thplot[:orbit_end+1]
+    tplot = tplot[:orbit_end+1]
+    kinetic = kinetic[:orbit_end+1]
+    potential = potential[:orbit_end+1]
+    aphelion = np.array(aphelion) # Dont want ot trim peri and aphelion to avoid boundary cond snipping
+    perihelion = np.array(perihelion)
     
     if plot_traj:
         #%* Graph the trajectory of the comet.
@@ -219,20 +245,43 @@ def orbit(input_dict = {},calc_info = False,
         plt.show()
 
     if calc_info:
+        
+        # Theoretical major axis eq 7
+        a_t = 1/( (2/r0) - (v0**2/GM) )
+        # Find theoretical period from eq 10
+        T_t = a_t**(3/2)
+        E_t = -(GM*mass/2*a_t) # Thry Energy
+        L_t = r0*mass*v0 #Thry angular momentum
         # Period
         T = tplot[-2]
-        # semi-major axis (eq 10)
-        # Or find values along x-axis?
-        a = (T**2*(GM/(4*np.pi**2)))**(1/3)
-        # eccentricity TOp of pg 2??
-        e1 = max(rplot)/a - 1
-        e2 = 1 - min(rplot)/a
-        print(e1,e2)
-        e = (e1+e2)/2
+        print("Numerical Period:",T)
+        print('Theoretical Period:',T_t)
+        
+        # Part b
+        # semi-major axis same as in hw3_ex14
+        a = (aphelion[0,0]+perihelion[0,0])/2
+        print("\nNumerical Semi-major axis:",a)
+        print("Theory Semi-major axis (calc with Kepler's 3rd law, using numerical period'):",a_t)
+        print("The similarity in computed vs. theory confirms Kepler's 3rd law (in this case)")
+        
+        # eccentricity Part a
+        e = rplot[int(aphelion[0,-1])]/a - 1
+        
+        
+        e_t = np.sqrt(1 + ( (2*E_t*L_t**2) / (GM**2*mass**3) ) )
+        print("\nNumerical eccentricity:",e)
+        print("Theoretical eccentricity:",e_t)
         # perihelion distance
-        peri = (1-e)*a
-        info = [T,e,peri]
-        return rplot,thplot,info
+        print("\nNumerical Perihelion Distance:",perihelion[0,0])
+        
+        # Virial theorem Part c
+        print("-----\nPart c")
+        time_avg_kin = np.mean(kinetic)
+        time_avg_pot = np.mean(potential)
+        print("time average kinetic energy:",time_avg_kin)
+        print("- (1/2) * time average potential energy:",-.5*time_avg_pot)
+
+        return rplot,thplot,aphelion,perihelion,kinetic,potential
 
     return rplot, thplot
 
@@ -245,14 +294,17 @@ if __name__ == "__main__":
         'tau': .001,
         'NumericalMethod': 2
         }
-    rplot, thplot, info = orbit(input_dict, calc_info=True)
+    print('non-elliptical')
+    rplot, thplot, aphelion,perihelion,kinetic,potential = orbit(input_dict, calc_info=True)
     
     # elliptical
     input_dict = {
         'r0': 1,
         'v0': 1*np.pi,
-        'nStep': 1100,
+        'nStep': 3000,
         'tau': .001,
         'NumericalMethod': 2
         }
-    #rplot, thplot, info = orbit(input_dict, calc_info=True)
+    print('________________\nelliptical')
+    rplot, thplot, aphelion,perihelion,kinetic,potential= orbit(input_dict, calc_info=True)
+    
