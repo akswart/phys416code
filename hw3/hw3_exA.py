@@ -111,75 +111,50 @@ def gravrk(s,t):
     derivs = np.array([v[0], v[1], accel[0], accel[1]])
     return derivs
 
-def gravrk_ex14(s,t):
-#%  Returns right-hand side of Kepler ODE; used by Runge-Kutta routines
-#%  Inputs
-#%    s      State vector [r(1) r(2) v(1) v(2)]
-#%    t      Time (not used)
-#%  Output
-#%    deriv  Derivatives [dr(1)/dt dr(2)/dt dv(1)/dt dv(2)/dt]
-
-    GM = 4*np.pi**2
-    # Hardcoded in vars since 
-    # Im not sure on an elegant way to add them to function
-    alpha = .1
-
-#%* Compute acceleration
-    r = np.array([s[0], s[1]])  # Unravel the vector s into position and velocity
-    v = np.array([s[2] ,s[3]])
-    # Gravitational acceleration
-    Grav_mult = 1-(alpha/np.linalg.norm(r))
-    accel = (-GM*r/np.linalg.norm(r)**3)*Grav_mult  
-
-#%* Return derivatives [dr(1)/dt dr(2)/dt dv(1)/dt dv(2)/dt]
-    derivs = np.array([v[0], v[1], accel[0], accel[1]])
-    return derivs
-
-
 # orbit - Program to compute the orbit of a comet.
-#clear all;  help orbit;  % Clear memory and print header
-
-def orbit(input_dict = {},calc_info = False, plot_momentum = False,
-          inter_input = False, plot_traj = True, plot_energy = False):
-    if inter_input:
-        # Set initial position and velocity of the comet.
-        r0 = float(input("Enter initial radial distance (AU): "))
-        # v0 = float(input("Enter initial tangential velocity (AU/yr): "))
-        vstr = str(input("Enter initial tangential velocity (AU/yr) as a number or multiple of Pi (e.g.,2*pi): "))
-        
-        # modify input to allow 'pi'
-        vinp = vstr.split('*')
-        if (vinp[-1].lower() == 'pi'):
-          v0 = float(vinp[0])*np.pi
-        else:
-          v0 = float(vinp[0])
-        
-        nStep = int(input("Enter number of steps: "))
-        tau =  float(input("Enter time step (yr): "))
-        NumericalMethod=0
-        while(NumericalMethod not in np.array([1,2,3,4,5,6,7])):
-            NumericalMethod = int(input("Choose a number for a numerical method:\n\
-         1-Euler, 2-Euler-Cromer, 3-Runge-Kutta 4-Adaptive R-K: "))
-    elif input_dict:
-        r0 = input_dict['r0']
-        v0 = input_dict['v0']
-        nStep = input_dict['nStep']
-        tau = input_dict['tau']
-        NumericalMethod = input_dict['NumericalMethod']
-    else:
-        r0 = 1
-        v0 = 2*np.pi
-        nStep = 1000
-        tau = .01
-        NumericalMethod = 3
+"""
+Planning:
+    Input:
+    Takes list of objects
+    Each object has a dict that states:
+        radius (r0)
+        velocity (v0)
+        mass (mass)
+    tau and nSteps is directly passed in
     
-    r = np.array([r0, 0.])
-    v = np.array([0., v0])
-    state = np.array([ r[0], r[1], v[0], v[1] ])   # Used by R-K routines
+    Output:
+    Iterate over array and build inital value arrays for each planet
+    each planet is a dict in a list
+    dict contains variables with standard names as from orbit.py as keys
+    values for each key are lists
+    
+"""
+def orbit(tau, nStep, input_list = [],calc_info = False, plot_momentum = False,
+           plot_traj = True, plot_energy = False):        
+
+    if input_list:
+        for planet in input_list:
+            print(planet)
+    else:
+        r0_e = 1
+        v0_e = 2*np.pi
+        
+        r0_j = 4
+        v0_j = 2*np.pi
+
+    
+    r_e = np.array([r0_e, 0.])
+    v_e = np.array([0., v0_e])
+    state_e = np.array([ r_e[0], r_e[1], v_e[0], v_e[1] ])   # Used by R-K routines
+    
+    r_j = np.array([r0_j, 0.])
+    v_j = np.array([0., v0_j])
+    state_j = np.array([ r_j[0], r_j[1], v_j[0], v_j[1] ]) 
     
     #Set physical parameters (mass, G*M)
     GM = 4*np.pi**2      # Grav. const. * Mass of Sun (au^3/yr^2)
-    mass = 1.        # Mass of comet
+    mass_e = 1.        # Mass of comet
+    mass_j = 1.
     adaptErr = 1.e-4 # Error parameter used by adaptive Runge-Kutta
     time = 0.0
     
@@ -190,74 +165,44 @@ def orbit(input_dict = {},calc_info = False, plot_momentum = False,
       #%* Record position and energy for plotting.
       # Initially set the arrays for the first step
       if istep == 0:
-          rplot = np.linalg.norm(r)
-          thplot = np.arctan2(r[1],r[0])
           tplot = time
-          kinetic = .5*mass*np.linalg.norm(v)**2
-          potential= - GM*mass/np.linalg.norm(r)
-          momentum = [np.linalg.norm(np.cross(r,mass*v))]
-          perihelion = []
-          aphelion = []
-      else:    
-          rplot = np.append(rplot,np.linalg.norm(r))           #Record position for polar plot
-          thplot = np.append(thplot,np.arctan2(r[1],r[0]))
-          tplot = np.append(tplot,time)
-          kinetic = np.append(kinetic,0.5*mass*np.linalg.norm(v)**2)   # Record energies
-          potential= np.append(potential,- GM*mass/np.linalg.norm(r))
-          momentum.append(np.linalg.norm(np.cross(r, mass*v)))
 
-      #%* Calculate new position and velocity using desired method.
-      if NumericalMethod == 1 :
-        accel = -GM*r/np.linalg.norm(r)**3
-        r = r + tau*v             # Euler step
-        v = v + tau*accel
-        time = time + tau
-      elif NumericalMethod == 2:
-        accel = -GM*r/np.linalg.norm(r)**3
-        v = v + tau*accel
-        r = r + tau*v             # Euler-Cromer step
-        time = time + tau
-      elif NumericalMethod == 3:
-        state = rk4(state,time,tau,gravrk_ex14)
-        r = np.array([state[0], state[1]])   # 4th order Runge-Kutta
-        v = np.array([state[2], state[3]])
-        time = time + tau
-      else:
-        [state, time, tau] = rka(state,time,tau,adaptErr,gravrk_ex14)
+          rplot_e = np.linalg.norm(r_e)
+          thplot_e = np.arctan2(r_e[1],r_e[0])
+          kinetic_e = .5*mass_e*np.linalg.norm(v_e)**2
+          potential_e = - GM*mass_e/np.linalg.norm(r_e)
+          momentum_e = [np.linalg.norm(np.cross(r_e,mass_e*v_e))]
+          
+          rplot_j = np.linalg.norm(r_j)
+          thplot_j = np.arctan2(r_j[1],r_j[0])
+          kinetic_j = .5*mass_j*np.linalg.norm(v_j)**2
+          potential_j = - GM*mass_j/np.linalg.norm(r_j)
+          momentum_j = [np.linalg.norm(np.cross(r_j,mass_j*v_j))]
+      else:    
+          tplot = np.append(tplot,time)
+          
+          rplot_e = np.append(rplot_e,np.linalg.norm(r_e))           #Record position for polar plot
+          thplot_e = np.append(thplot_e,np.arctan2(r_e[1],r_e[0]))
+          kinetic_e = np.append(kinetic_e,0.5*mass_e*np.linalg.norm(v_e)**2)   # Record energies
+          potential_e = np.append(potential_e,- GM*mass_e/np.linalg.norm(r_e))
+          momentum_e.append(np.linalg.norm(np.cross(r_e, mass_e*v_e)))
+          
+          rplot_j = np.append(rplot_j,np.linalg.norm(r_j))           #Record position for polar plot
+          thplot_j = np.append(thplot_j,np.arctan2(r_j[1],r_j[0]))
+          kinetic = np.append(kinetic_j,0.5*mass_j*np.linalg.norm(v_j)**2)   # Record energies
+          potential= np.append(potential_j,- GM*mass_j/np.linalg.norm(r_j))
+          momentum_j.append(np.linalg.norm(np.cross(r_j, mass_j*v_j)))
+
+      #%* Calculate new position and velocity using Adaptive RK4
+        [state, time, tau] = rka(state,time,tau,adaptErr,gravrk)
         r = np.array([state[0], state[1]])   # Adaptive Runge-Kutta
         v = np.array([state[2], state[3]])
-      # Find perihelion, aphelion
-      if istep >= 2:
-          if rplot[istep-1] > rplot[istep-2] and rplot[istep-1] > rplot[istep]:
-              #if rplot[istep-1] >= min(rplot)-tau and rplot[istep-1] <= min(rplot)+tau:
-              #    perihelion.append( (rplot[istep-1],tplot[istep-1]) )
-              if rplot[istep-1] >= max(rplot)-tau and rplot[istep-1] <= max(rplot)+tau:
-                  aphelion.append( [rplot[istep-1],thplot[istep-1],tplot[istep-1]] )
-          elif rplot[istep-1] < rplot[istep-2] and rplot[istep-1] < rplot[istep]:
-              perihelion.append( [rplot[istep-1],thplot[istep-1],tplot[istep-1]] )
-
-    # Given alpha=.1, calculate a
-    alpha = .1
-    a = np.sqrt(1 + ( GM*mass**2*alpha / (momentum[0]**2) ))    
-    shift_rad = (360*(1-a)/a)*(np.pi/180)
-
-    # Calculate aphelion, perihelion
-    aphelion = np.array(aphelion)
-    perihelion = np.array(perihelion)
-    ap_thetas = aphelion[:,1]
-    peri_thetas = perihelion[:,1]
+      # If sometime after first step and theta goes from neg to pos, then we know we've completed an orbit
+ #     if istep != 0 and (thplot[-2:]*[-1,1] > 0).all():
+ #         break
+          
+    #print(thplot[-5:])
     
-    a1 = ap_thetas[0:-1]
-    a2 = ap_thetas[1:]
-    adelta_norm = np.array([i+2*np.pi if i<0 else i for i in (a1-a2)])
-    
-    p1 = peri_thetas[0:-1]
-    p2 = peri_thetas[1:]
-    pdelta_norm = np.array([i+2*np.pi if i<0 else i for i in (p1-p2)])
-    print("Difference between predicted and average observed orbit precession in aphelion:")
-    print(np.mean(shift_rad+adelta_norm))
-
-
     if plot_traj:
         #%* Graph the trajectory of the comet.
         plt.figure(1); plt.clf()  #Clear figure 1 window and bring forward
@@ -279,21 +224,20 @@ def orbit(input_dict = {},calc_info = False, plot_momentum = False,
         # Plots angular momentum as a function of time
         plt.figure(3)
         plt.plot(tplot,momentum)
-
-
+   
+    
 
     return rplot, thplot
 
 if __name__ == "__main__":
-    # elliptical
+    # non-elliptical
     input_dict = {
         'r0': 1,
         'v0': 1*np.pi,
         'nStep': 1000,
         'tau': .01,
-        'NumericalMethod': 4
         }
     
     
     
-    rplot, thplot = orbit(input_dict,plot_energy = True)
+    rplot, thplot  = orbit(.01,1000, input_dict)

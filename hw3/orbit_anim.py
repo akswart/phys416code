@@ -195,9 +195,11 @@ plt.show()
 
 #plt.ion() # turn on interactive
 
+"""
 # animation
 Writer = animation.writers['ffmpeg']
 writer = Writer(fps=20, metadata=dict(artist='Me'), bitrate=1800)
+"""
 
 xearth = rplot*np.cos(thplot)
 yearth = rplot*np.sin(thplot)
@@ -207,6 +209,7 @@ fig = plt.figure(3);
 plt.axis('equal')
 plt.axis([-1.5,1.5,-1.5,1.5])
 
+"""
 def animate(i):
     plt.title('time =%0.2f years'%tplot[i])
     plt.plot(xearth[i],yearth[i],'bo')
@@ -229,4 +232,4 @@ for i in range(0,len(xearth)):
     plt.draw()
     plt.pause(tau)
     plt.show()
-"""
+#"""
