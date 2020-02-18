@@ -196,6 +196,8 @@ def orbit(input_dict = {},calc_info = False, plot_momentum = False,
           kinetic = .5*mass*np.linalg.norm(v)**2
           potential= - GM*mass/np.linalg.norm(r)
           momentum = [np.linalg.norm(np.cross(r,mass*v))]
+          perihelion = []
+          aphelion = []
       else:    
           rplot = np.append(rplot,np.linalg.norm(r))           #Record position for polar plot
           thplot = np.append(thplot,np.arctan2(r[1],r[0]))
@@ -224,12 +226,38 @@ def orbit(input_dict = {},calc_info = False, plot_momentum = False,
         [state, time, tau] = rka(state,time,tau,adaptErr,gravrk_ex14)
         r = np.array([state[0], state[1]])   # Adaptive Runge-Kutta
         v = np.array([state[2], state[3]])
-      # If sometime after first step and theta goes from neg to pos, then we know we've completed an orbit
- #     if istep != 0 and (thplot[-2:]*[-1,1] > 0).all():
- #         break
-          
-    #print(thplot[-5:])
+      # Find perihelion, aphelion
+      if istep >= 2:
+          if rplot[istep-1] > rplot[istep-2] and rplot[istep-1] > rplot[istep]:
+              #if rplot[istep-1] >= min(rplot)-tau and rplot[istep-1] <= min(rplot)+tau:
+              #    perihelion.append( (rplot[istep-1],tplot[istep-1]) )
+              if rplot[istep-1] >= max(rplot)-tau and rplot[istep-1] <= max(rplot)+tau:
+                  aphelion.append( [rplot[istep-1],thplot[istep-1],tplot[istep-1]] )
+          elif rplot[istep-1] < rplot[istep-2] and rplot[istep-1] < rplot[istep]:
+              perihelion.append( [rplot[istep-1],thplot[istep-1],tplot[istep-1]] )
+
+    # Given alpha=.1, calculate a
+    alpha = .1
+    a = np.sqrt(1 + ( GM*mass**2*alpha / (momentum[0]**2) ))    
+    shift_rad = (360*(1-a)/a)*(np.pi/180)
+
+    # Calculate aphelion, perihelion
+    aphelion = np.array(aphelion)
+    perihelion = np.array(perihelion)
+    ap_thetas = aphelion[:,1]
+    peri_thetas = perihelion[:,1]
     
+    a1 = ap_thetas[0:-1]
+    a2 = ap_thetas[1:]
+    adelta_norm = np.array([i+2*np.pi if i<0 else i for i in (a1-a2)])
+    
+    p1 = peri_thetas[0:-1]
+    p2 = peri_thetas[1:]
+    pdelta_norm = np.array([i+2*np.pi if i<0 else i for i in (p1-p2)])
+    print("Difference between predicted and average observed orbit precession in aphelion:")
+    print(np.mean(shift_rad+adelta_norm))
+
+
     if plot_traj:
         #%* Graph the trajectory of the comet.
         plt.figure(1); plt.clf()  #Clear figure 1 window and bring forward
@@ -252,15 +280,12 @@ def orbit(input_dict = {},calc_info = False, plot_momentum = False,
         plt.figure(3)
         plt.plot(tplot,momentum)
 
-    # Given alpha=.1, calculate a
-    alpha = .1
-    a = np.sqrt(1+(GM*mass**2*alpha/(momentum[0]**2)))    
-    
+
 
     return rplot, thplot
 
 if __name__ == "__main__":
-    # non-elliptical
+    # elliptical
     input_dict = {
         'r0': 1,
         'v0': 1*np.pi,
@@ -271,4 +296,4 @@ if __name__ == "__main__":
     
     
     
-    rplot, thplot  = orbit(input_dict,plot_momentum = True)
+    rplot, thplot, peri_thetas,ap_thetas, pdelta_norm, adelta_norm = orbit(input_dict,plot_momentum = False)
