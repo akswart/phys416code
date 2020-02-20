@@ -133,80 +133,80 @@ def orbit(tau, nStep, input_list = [],calc_info = False, plot_momentum = False,
            plot_traj = True, plot_energy = False):        
 
     if input_list:
-        for planet in input_list:
+        output_list = []
+        for planet in input_list:  # planet in input list is tuple of (r0,v0,mass0)
+            r = np.array([planet[0], 0.])
+            v = np.array([0., planet[1]])
+            state = np.array([ r[0], r[1], v[0], v[1] ])
+            mass = planet[2]
+            output_list.append({'r' : r, 'v' : v,'state': state, 'mass': mass})
             print(planet)
     else:
-        r0_e = 1
-        v0_e = 2*np.pi
-        
-        r0_j = 4
-        v0_j = 2*np.pi
+        raise Exception("Please enter input values")
 
     
-    r_e = np.array([r0_e, 0.])
-    v_e = np.array([0., v0_e])
-    state_e = np.array([ r_e[0], r_e[1], v_e[0], v_e[1] ])   # Used by R-K routines
+    #r_e = np.array([r0_e, 0.])
+    #v_e = np.array([0., v0_e])
+    #state_e = np.array([ r_e[0], r_e[1], v_e[0], v_e[1] ])   # Used by R-K routines
     
-    r_j = np.array([r0_j, 0.])
-    v_j = np.array([0., v0_j])
-    state_j = np.array([ r_j[0], r_j[1], v_j[0], v_j[1] ]) 
+    #r_j = np.array([r0_j, 0.])
+    #v_j = np.array([0., v0_j])
+    #state_j = np.array([ r_j[0], r_j[1], v_j[0], v_j[1] ]) 
     
     #Set physical parameters (mass, G*M)
     GM = 4*np.pi**2      # Grav. const. * Mass of Sun (au^3/yr^2)
-    mass_e = 1.        # Mass of comet
-    mass_j = 1.
     adaptErr = 1.e-4 # Error parameter used by adaptive Runge-Kutta
     time = 0.0
     
     #%* Loop over desired number of steps using specified
     #%  numerical method.
     for istep in range(0,nStep):
-    
-      #%* Record position and energy for plotting.
-      # Initially set the arrays for the first step
-      if istep == 0:
-          tplot = time
+        
+        if istep == 0:
+            tplot = time
+        else:
+            tplot = np.append(tplot,time)
+            
+            
+        for planet in output_list:
+            #%* Record position and energy for plotting.
+            # Initially set the arrays for the first step
+            if istep == 0:
+                
+                rplot = np.linalg.norm(planet['r'])
+                thplot = np.arctan2(planet['r'][1],planet['r'][0])
+                kinetic = .5*planet['mass']*np.linalg.norm(planet['v'])**2
+                potential = - GM*planet['mass']/np.linalg.norm(planet['r'])
+                momentum = [np.linalg.norm(np.cross(planet['r'],planet['mass']*planet['v']))]
 
-          rplot_e = np.linalg.norm(r_e)
-          thplot_e = np.arctan2(r_e[1],r_e[0])
-          kinetic_e = .5*mass_e*np.linalg.norm(v_e)**2
-          potential_e = - GM*mass_e/np.linalg.norm(r_e)
-          momentum_e = [np.linalg.norm(np.cross(r_e,mass_e*v_e))]
-          
-          rplot_j = np.linalg.norm(r_j)
-          thplot_j = np.arctan2(r_j[1],r_j[0])
-          kinetic_j = .5*mass_j*np.linalg.norm(v_j)**2
-          potential_j = - GM*mass_j/np.linalg.norm(r_j)
-          momentum_j = [np.linalg.norm(np.cross(r_j,mass_j*v_j))]
-      else:    
-          tplot = np.append(tplot,time)
-          
-          rplot_e = np.append(rplot_e,np.linalg.norm(r_e))           #Record position for polar plot
-          thplot_e = np.append(thplot_e,np.arctan2(r_e[1],r_e[0]))
-          kinetic_e = np.append(kinetic_e,0.5*mass_e*np.linalg.norm(v_e)**2)   # Record energies
-          potential_e = np.append(potential_e,- GM*mass_e/np.linalg.norm(r_e))
-          momentum_e.append(np.linalg.norm(np.cross(r_e, mass_e*v_e)))
-          
-          rplot_j = np.append(rplot_j,np.linalg.norm(r_j))           #Record position for polar plot
-          thplot_j = np.append(thplot_j,np.arctan2(r_j[1],r_j[0]))
-          kinetic = np.append(kinetic_j,0.5*mass_j*np.linalg.norm(v_j)**2)   # Record energies
-          potential= np.append(potential_j,- GM*mass_j/np.linalg.norm(r_j))
-          momentum_j.append(np.linalg.norm(np.cross(r_j, mass_j*v_j)))
-
-      #%* Calculate new position and velocity using Adaptive RK4
-        [state, time, tau] = rka(state,time,tau,adaptErr,gravrk)
-        r = np.array([state[0], state[1]])   # Adaptive Runge-Kutta
-        v = np.array([state[2], state[3]])
-      # If sometime after first step and theta goes from neg to pos, then we know we've completed an orbit
- #     if istep != 0 and (thplot[-2:]*[-1,1] > 0).all():
- #         break
-          
-    #print(thplot[-5:])
+                planet["rplot"] = rplot
+                planet['thplot'] = thplot
+                planet['kinetic'] = kinetic
+                planet['potential'] = potential
+                planet['momentum'] = momentum
+                
+            else:    
+                
+                planet["rplot"]  = np.append(planet["rplot"] ,np.linalg.norm(planet['r']))           #Record position for polar plot
+                planet['thplot'] = np.append(planet['thplot'],np.arctan2(planet['r'][1],planet['r'][0]))
+                planet['kinetic']  = np.append(planet['kinetic'] ,0.5*planet['mass']*np.linalg.norm(planet['v'] )**2)   # Record energies
+                planet['potential'] = np.append(planet['potential'], -GM*planet['mass']/np.linalg.norm(planet['r']))
+                planet['momentum'].append(np.linalg.norm(np.cross(planet['r'], planet['mass']*planet['v'])))
     
+            #%* Calculate new position and velocity using Adaptive RK4
+            [state, time, tau] = rka(planet['state'],time,tau,adaptErr,gravrk)
+            r = np.array([state[0], state[1]])   # Adaptive Runge-Kutta
+            v = np.array([state[2], state[3]])
+            planet['state'] = state
+            planet['r'] = r
+            planet['v'] = v
+          
+            
     if plot_traj:
         #%* Graph the trajectory of the comet.
         plt.figure(1); plt.clf()  #Clear figure 1 window and bring forward
-        plt.polar(thplot,rplot,'-')  # Use polar plot for graphing orbit
+        for planet in output_list:
+            plt.polar(planet['thplot'],planet['rplot'],'-')  # Use polar plot for graphing orbit
         plt.xlabel('Distance (AU)')
         plt.grid(True)
     
@@ -219,11 +219,7 @@ def orbit(tau, nStep, input_list = [],calc_info = False, plot_momentum = False,
         plt.xlabel('Time (yr)'); plt.ylabel('Energy (M AU^2/yr^2)')
         plt.grid(True)
         plt.show()
-        
-    if plot_momentum:
-        # Plots angular momentum as a function of time
-        plt.figure(3)
-        plt.plot(tplot,momentum)
+
    
     
 
@@ -231,13 +227,8 @@ def orbit(tau, nStep, input_list = [],calc_info = False, plot_momentum = False,
 
 if __name__ == "__main__":
     # non-elliptical
-    input_dict = {
-        'r0': 1,
-        'v0': 1*np.pi,
-        'nStep': 1000,
-        'tau': .01,
-        }
+    # List of input tuples values is (r0,v0)
+    input_list = [(1,2*np.pi,1),(2,1*np.pi,1)]
     
     
-    
-    rplot, thplot  = orbit(.01,1000, input_dict)
+    rplot, thplot  = orbit(.01,1000, input_list)
