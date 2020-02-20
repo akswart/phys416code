@@ -10,7 +10,7 @@ Created on Mon Feb 17 17:01:26 2020
 import numpy as np
 import matplotlib.pyplot as plt
 
-def rk4(x,t,tau,derivsRK):
+def rk4(x,t,tau,derivsRK,planet,output_list):
 #%  Runge-Kutta integrator (4th order)
 #% Input arguments -
 #%   x = current value of dependent variable
@@ -22,18 +22,20 @@ def rk4(x,t,tau,derivsRK):
 #% Output arguments -
 #%   xout = new value of x after a step of size tau
     half_tau = 0.5*tau
-    F1 = derivsRK(x,t)
+    F1 = derivsRK(x,t,planet,output_list)
     t_half = t + half_tau
     xtemp = x + half_tau*F1
-    F2 = derivsRK(xtemp,t_half)
+    F2 = derivsRK(xtemp,t_half,planet,output_list)
     xtemp = x + half_tau*F2
-    F3 = derivsRK(xtemp,t_half)
+    F3 = derivsRK(xtemp,t_half,planet,output_list)
     t_full = t + tau
     xtemp = x + tau*F3
-    F4 = derivsRK(xtemp,t_full)
+    F4 = derivsRK(xtemp,t_full,planet,output_list)
     xout = x + tau/6.*(F1 + F4 + 2.*(F2+F3))
     return xout
-def rka(x,t,tau,err,derivsRK):
+
+
+def rka(planet,t,tau,err,derivsRK,output_list):
 
 #% Adaptive Runge-Kutta routine
 #% Inputs
@@ -50,9 +52,13 @@ def rka(x,t,tau,err,derivsRK):
 #%   tau        Suggested step size for next call to rka
 
 #%* Set initial variables
+    x = planet['state']
+    
     tSave = t;  xSave = x    # Save initial values
     safe1 = .9;  safe2 = 4.  # Safety factors
     eps = np.spacing(1) # smallest value
+    
+
 
 #%* Loop over maximum number of attempts to satisfy error bound
     maxTry = 100
@@ -61,13 +67,13 @@ def rka(x,t,tau,err,derivsRK):
 	
 #%* Take the two small time steps
         half_tau = 0.5 * tau
-        xTemp = rk4(xSave,tSave,half_tau,derivsRK)
+        xTemp = rk4(xSave,tSave,half_tau,derivsRK,planet,output_list)
         t = tSave + half_tau
-        xSmall = rk4(xTemp,t,half_tau,derivsRK)
+        xSmall = rk4(xTemp,t,half_tau,derivsRK,planet,output_list)
   
   #%* Take the single big time step
         t = tSave + tau
-        xBig = rk4(xSave,tSave,tau,derivsRK)
+        xBig = rk4(xSave,tSave,tau,derivsRK,planet,output_list)
   
   #%* Compute the estimated truncation error
         scale = err * (np.abs(xSmall) + np.abs(xBig))/2.
@@ -92,7 +98,7 @@ def rka(x,t,tau,err,derivsRK):
 #%* Issue error message if error bound never satisfied
     print ('ERROR: Adaptive Runge-Kutta routine failed')
     return
-def gravrk(s,t):
+def gravrk(s,t,planet,output_list):
 #%  Returns right-hand side of Kepler ODE; used by Runge-Kutta routines
 #%  Inputs
 #%    s      State vector [r(1) r(2) v(1) v(2)]
@@ -106,7 +112,18 @@ def gravrk(s,t):
     r = np.array([s[0], s[1]])  # Unravel the vector s into position and velocity
     v = np.array([s[2] ,s[3]])
     accel = -GM*r/np.linalg.norm(r)**3  # Gravitational acceleration
-
+    
+    # find accel due to other planets
+    planet_accel = 0
+    #print(planet)
+    ''' # Didnt have time to debug n-body accelearation, ran out of time
+    for i in output_list:
+        #print(i)
+        if i != planet:
+            #print(i)
+            r_prime = i['r'] - planet['r']
+            g = - (GM*i['mass']*planet['mass']*r_prime)/np.linalg.norm(r_prime)**3
+    '''
 #%* Return derivatives [dr(1)/dt dr(2)/dt dv(1)/dt dv(2)/dt]
     derivs = np.array([v[0], v[1], accel[0], accel[1]])
     return derivs
@@ -140,18 +157,11 @@ def orbit(tau, nStep, input_list = [],calc_info = False, plot_momentum = False,
             state = np.array([ r[0], r[1], v[0], v[1] ])
             mass = planet[2]
             output_list.append({'r' : r, 'v' : v,'state': state, 'mass': mass})
-            print(planet)
+            #print(planet)
     else:
         raise Exception("Please enter input values")
 
-    
-    #r_e = np.array([r0_e, 0.])
-    #v_e = np.array([0., v0_e])
-    #state_e = np.array([ r_e[0], r_e[1], v_e[0], v_e[1] ])   # Used by R-K routines
-    
-    #r_j = np.array([r0_j, 0.])
-    #v_j = np.array([0., v0_j])
-    #state_j = np.array([ r_j[0], r_j[1], v_j[0], v_j[1] ]) 
+
     
     #Set physical parameters (mass, G*M)
     GM = 4*np.pi**2      # Grav. const. * Mass of Sun (au^3/yr^2)
@@ -194,7 +204,8 @@ def orbit(tau, nStep, input_list = [],calc_info = False, plot_momentum = False,
                 planet['momentum'].append(np.linalg.norm(np.cross(planet['r'], planet['mass']*planet['v'])))
     
             #%* Calculate new position and velocity using Adaptive RK4
-            [state, time, tau] = rka(planet['state'],time,tau,adaptErr,gravrk)
+            #print(planet,'\n\n')
+            [state, time, tau] = rka(planet,time,tau,adaptErr,gravrk,output_list)
             r = np.array([state[0], state[1]])   # Adaptive Runge-Kutta
             v = np.array([state[2], state[3]])
             planet['state'] = state
@@ -227,8 +238,8 @@ def orbit(tau, nStep, input_list = [],calc_info = False, plot_momentum = False,
 
 if __name__ == "__main__":
     # non-elliptical
-    # List of input tuples values is (r0,v0)
-    input_list = [(1,2*np.pi,1),(2,1*np.pi,1)]
+    # List of input tuples values is (r0,v0,mass) mass is in relative units to sun
+    input_list = [(1,2*np.pi,3.003489*10**-6),(5.2,123.36*np.pi,954.79194*10**-6)] #Earth, jupiter
     
     
     rplot, thplot  = orbit(.01,1000, input_list)
