@@ -12,7 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d.axes3d as p3
 
-def rk4(x,t,tau,derivsRK):
+def rk4(x,t,tau,derivsRK,param):
     """
     ##  Runge-Kutta integrator (4th order)
     ## Input arguments -
@@ -26,19 +26,19 @@ def rk4(x,t,tau,derivsRK):
     ##   xout = new value of x after a step of size tau
     """
     half_tau = 0.5*tau
-    F1 = derivsRK(x,t)
+    F1 = derivsRK(x,t,param)
     t_half = t + half_tau
     xtemp = x + half_tau*F1
-    F2 = derivsRK(xtemp,t_half)
+    F2 = derivsRK(xtemp,t_half,param)
     xtemp = x + half_tau*F2
-    F3 = derivsRK(xtemp,t_half)
+    F3 = derivsRK(xtemp,t_half,param)
     t_full = t + tau
     xtemp = x + tau*F3
-    F4 = derivsRK(xtemp,t_full)
+    F4 = derivsRK(xtemp,t_full,param)
     xout = x + tau/6.*(F1 + F4 + 2.*(F2+F3))
     return xout
 
-def lorzrk(s,t):
+def lorzrk(s,t,param):
     """
     #  Returns right-hand side of Lorenz model ODEs
     #  Inputs
@@ -48,6 +48,9 @@ def lorzrk(s,t):
     #  Output
     #    deriv  Derivatives [dx/dt dy/dt dz/dt]
     """
+    r = param[0]
+    sigma = param[1]
+    b = param[2]
     # For clarity, unravel input vectors
     x = s[0]; y = s[1]; z = s[2]
     # Return the derivatives [dx/dt dy/dt dz/dt]
@@ -58,7 +61,7 @@ def lorzrk(s,t):
     return deriv
 
 
-def lorenz_data_gen(init_x,init_y,init_z,r):
+def lorenz_data_gen(init_x,init_y,init_z,init_r):
     """
     Generates data needed to plot the results 
     of lorentz.py using rk4 as in Ch3 ex 25
@@ -88,12 +91,12 @@ def lorenz_data_gen(init_x,init_y,init_z,r):
 
     """
     # Set initial state x,y,z and parameters r,sigma,b
-    sxin,syin,szin = 1,1,21
+    sxin,syin,szin = init_x,init_y,init_z
     state = np.zeros(3)
     state[0] = float(sxin); state[1]  = float(syin); state[2]  = float(szin)
     
     
-    r = 28.0
+    r = init_r
     sigma = 10   # Parameter sigma
     b = 8./3.     # Parameter b
     param = np.array([r, sigma, b])  # Vector of parameters passed to rka
@@ -117,12 +120,12 @@ def lorenz_data_gen(init_x,init_y,init_z,r):
         xplot = np.append(xplot,x)
         yplot = np.append(yplot,y)
         zplot = np.append(zplot,z)
-        if( istep%50 ==0 ):
-          print('Finished %d steps out of %d '%(istep,nstep))
+        #if( istep%50 ==0 ):
+          #print('Finished %d steps out of %d '%(istep,nstep))
         # Find new state using Runge-Kutta4
-        state = rk4(state,time,tau,lorzrk)
+        state = rk4(state,time,tau,lorzrk,param)
         time += tau
-    
+    """
     # Graph the time series x(t)
     plt.figure(1) 
     plt.clf()  # Clear figure 1 window and bring forward
@@ -141,21 +144,33 @@ def lorenz_data_gen(init_x,init_y,init_z,r):
     ax.set_zlabel('z')
     ax.grid(True)
     # title('Lorenz model phase space')
-    ax.set_aspect('equal')
+    #ax.set_aspect('equal')
     plt.show()
-    
+    """
     return xplot,yplot,zplot,tplot
 
 def lorenz_plot(initial_cond_list):
     
-    ic_1 = initial_conds[0]
-    ic_2 = initial_conds[1]
+    ic_1 = initial_cond_list[0]
+    ic_2 = initial_cond_list[1]
     
     xplot1,yplot1,zplot1,tplot1 = lorenz_data_gen(ic_1[0],ic_1[1],ic_1[2],ic_1[3])
     xplot2,yplot2,zplot2,tplot2 = lorenz_data_gen(ic_2[0],ic_2[1],ic_2[2],ic_2[3])
     
     # Calculate distance
     d = np.sqrt( (xplot1 - xplot2)**2 + (yplot1 - yplot2)**2 + (zplot1 - zplot2)**2 )
+    plt.figure(1)
+    plt.plot(tplot1,d)
+    plt.title("Plot for deviation vs time")
+    plt.xlabel("Time")
+    plt.ylabel("Distance between different trajectories")
+    
+    
+    plt.figure(2)
+    plt.semilogy(tplot1,d)
+    plt.title("SemiLogy Plot for deviation vs time")
+    plt.xlabel("Time")
+    plt.ylabel("Distance between different trajectories") 
     
     
 if __name__ == '__main__':
