@@ -249,4 +249,4 @@ if __name__ == "__main__":
     input_list = [(1,2.9*np.pi,3.003489*10**-6),(2,2.1*np.pi,3.003489*10**-6)] #Earth, Earth2
     
     
-    rplot, thplot  = orbit(.1,1000,3,1, input_list)
+    rplot, thplot  = orbit(.1,2000,10**-4,1, input_list, plot_energy=False)
