@@ -194,7 +194,6 @@ def lorenz_data_gen(init_r,init_f,param):
     
 if __name__ == '__main__':
     
-    
     for inital_foxes in [5,60,90,100,120,140]:
         initial_cond_list = [(100,inital_foxes,(10,10**6,.1) )]
         ic_1 = initial_cond_list[0]
