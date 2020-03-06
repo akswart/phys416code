@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Mon Feb 17 17:01:26 2020
+Created on Fri Mar  6 13:17:51 2020
 
 @author: aswart
 """
-
 # python 3 version 2/15
 import numpy as np
 import matplotlib.pyplot as plt
@@ -33,7 +32,6 @@ def rk4(x,t,tau,derivsRK,planet,output_list):
     F4 = derivsRK(xtemp,t_full,planet,output_list)
     xout = x + tau/6.*(F1 + F4 + 2.*(F2+F3))
     return xout
-
 
 def rka(planet,t,tau,err,derivsRK,output_list):
 
@@ -98,6 +96,7 @@ def rka(planet,t,tau,err,derivsRK,output_list):
 #%* Issue error message if error bound never satisfied
     print ('ERROR: Adaptive Runge-Kutta routine failed')
     return
+
 def gravrk(s,t,planet,output_list):
 #%  Returns right-hand side of Kepler ODE; used by Runge-Kutta routines
 #%  Inputs
@@ -116,14 +115,22 @@ def gravrk(s,t,planet,output_list):
     # find accel due to other planets
     planet_accel = 0
     #print(planet)
-    ''' # Didnt have time to debug n-body accelearation, ran out of time
+    # Didnt have time to debug n-body accelearation, ran out of time
     for i in output_list:
+        if i is not planet and i is not output_list[0]:
+            F = i['k']*(np.linalg.norm(i['r'] - planet['r']) - i['L']) * \
+                (i['r'] - planet['r']) / np.linalg.norm(i['r'] - planet['r']) # I flipped indicies here so flipped sign again to counteract
+            #print(F)
+            
+            planet_accel += F/planet['mass']
+
+    accel += planet_accel  # Add each planet accel to grav accel
+    """
+    if i != planet:
         #print(i)
-        if i != planet:
-            #print(i)
-            r_prime = i['r'] - planet['r']
-            g = - (GM*i['mass']*planet['mass']*r_prime)/np.linalg.norm(r_prime)**3
-    '''
+        r_prime = i['r'] - planet['r']
+        g = - (GM*i['mass']*planet['mass']*r_prime)/np.linalg.norm(r_prime)**3
+    """
 #%* Return derivatives [dr(1)/dt dr(2)/dt dv(1)/dt dv(2)/dt]
     derivs = np.array([v[0], v[1], accel[0], accel[1]])
     return derivs
@@ -146,7 +153,7 @@ Planning:
     values for each key are lists
     
 """
-def orbit(tau, nStep, input_list = [],calc_info = False, plot_momentum = False,
+def orbit(tau, nStep, k, L,input_list = [],calc_info = False, plot_momentum = False,
            plot_traj = True, plot_energy = False):        
 
     if input_list:
@@ -156,7 +163,7 @@ def orbit(tau, nStep, input_list = [],calc_info = False, plot_momentum = False,
             v = np.array([0., planet[1]])
             state = np.array([ r[0], r[1], v[0], v[1] ])
             mass = planet[2]
-            output_list.append({'r' : r, 'v' : v,'state': state, 'mass': mass})
+            output_list.append({'r' : r, 'v' : v,'state': state, 'mass': mass,'k': k,'L':L})
             #print(planet)
     else:
         raise Exception("Please enter input values")
@@ -165,7 +172,7 @@ def orbit(tau, nStep, input_list = [],calc_info = False, plot_momentum = False,
     
     #Set physical parameters (mass, G*M)
     GM = 4*np.pi**2      # Grav. const. * Mass of Sun (au^3/yr^2)
-    adaptErr = 1.e-4 # Error parameter used by adaptive Runge-Kutta
+    adaptErr = 1.e-10 # Error parameter used by adaptive Runge-Kutta
     time = 0.0
     
     #%* Loop over desired number of steps using specified
@@ -205,13 +212,13 @@ def orbit(tau, nStep, input_list = [],calc_info = False, plot_momentum = False,
     
             #%* Calculate new position and velocity using Adaptive RK4
             #print(planet,'\n\n')
+            #print('lol')
             [state, time, tau] = rka(planet,time,tau,adaptErr,gravrk,output_list)
             r = np.array([state[0], state[1]])   # Adaptive Runge-Kutta
             v = np.array([state[2], state[3]])
             planet['state'] = state
             planet['r'] = r
             planet['v'] = v
-          
             
     if plot_traj:
         #%* Graph the trajectory of the comet.
@@ -239,7 +246,7 @@ def orbit(tau, nStep, input_list = [],calc_info = False, plot_momentum = False,
 if __name__ == "__main__":
     # non-elliptical
     # List of input tuples values is (r0,v0,mass) mass is in relative units to sun
-    input_list = [(1,2*np.pi,3.003489*10**-6),(1.5,1*np.pi,3.003489*10**-6)] #Earth, jupiter
+    input_list = [(1,2.9*np.pi,3.003489*10**-6),(2,2.1*np.pi,3.003489*10**-6)] #Earth, Earth2
     
     
-    rplot, thplot  = orbit(.01,1000, input_list)
+    rplot, thplot  = orbit(.1,1000,3,1, input_list)
