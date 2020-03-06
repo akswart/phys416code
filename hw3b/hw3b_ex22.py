@@ -89,72 +89,61 @@ def rka(x,t,tau,err,derivsRK,param):
   
         # If error is acceptable, return computed values
         if errorRatio < 1 : 
-            xSmall = xSmall ## +  (xDiff)/15
+            xSmall = xSmall
             return xSmall, t, tau  
 
 
-def lorzrk(s,t,param):
-    """
-    #  Returns right-hand side of Lorenz model ODEs
-    #  Inputs
-    #    s      State vector [x y z]
-    #    t      Time (not used)
-    #    param  Parameters [r sigma b]
-    #  Output
-    #    deriv  Derivatives [dx/dt dy/dt dz/dt]
-    """
-    r = param[0]
-    sigma = param[1]
-    b = param[2]
-    # For clarity, unravel input vectors
-    x = s[0]; y = s[1]; z = s[2]
-    # Return the derivatives [dx/dt dy/dt dz/dt]
-    deriv = np.zeros(3)
-    deriv[0] = sigma*(y-x)
-    deriv[1] = r*x - y - x*z
-    deriv[2] = x*y - b*z
+def lotka_volterra(s,t,param):
+    a = 10
+    b = 10**6
+    c = .1
+    
+    r = s[0]
+    f = s[1]
+    
+    deriv = np.zeros(2)
+    deriv[0] = a*(1-(r/b))*r - c*r*f
+    deriv[1] = -a*f + c*r*f
     return deriv
 
 
-def lorenz_data_gen(init_x,init_y,init_z,init_r):
+
+
+def lorenz_data_gen(init_r,init_f,param):
     """
     Generates data needed to plot the results 
     of lorentz.py using rk4 as in Ch3 ex 25
 
     Parameters
     ----------
-    init_x : Float
-        Inital x value.
-    init_y : Float
-        Initial y value.
-    init_z : Float
-        Inital z value.
-    r : float
-        Lorenz model parameter.
+    init_r : Int
+        Inital rabbits value.
+    init_y : Int
+        Initial fox value.
+    param : list
+        List of model parameter (a,b,c).
 
 
     Returns
     -------
-    xplot : Numpy array
-        Array of x-values used to plot.
-    yplot : Numpy array
-        Array of y-values used to plot.
-    zplot : Numpy array
-        Array of z-values used to plot.
+    rplot : Numpy array
+        Array of r-values used to plot.
+    fplot : Numpy array
+        Array of f-values used to plot.
     tplot : Numpy array
         Array of time-values used to plot.
 
     """
     # Set initial state x,y,z and parameters r,sigma,b
-    sxin,syin,szin = init_x,init_y,init_z
-    state = np.zeros(3)
-    state[0] = float(sxin); state[1]  = float(syin); state[2]  = float(szin)
+    srin,sfin = init_r,init_f
+    state = np.zeros(2)
+    state[0] = float(srin) 
+    state[1] = float(sfin)
     
-    
-    r = init_r
-    sigma = 10   # Parameter sigma
-    b = 8./3.     # Parameter b
-    param = np.array([r, sigma, b])  # Vector of parameters passed to rka
+    # Model paramaters
+    a = param[0]
+    b = param[1]
+    c = param[2]
     tau = 1       # Timestep from lorenz with n=500
     err = 1.e-3   # Error tolerance
     
@@ -162,25 +151,25 @@ def lorenz_data_gen(init_x,init_y,init_z,init_r):
     time = 0
     nstep = 500
     # initialize arrays
-    tplot=np.array([]); tauplot=np.array([])
-    xplot=np.array([]); yplot=np.array([]); zplot=np.array([])
+    tplot = np.array([]) 
+    tauplot = np.array([])
+    rplot = np.array([])
+    fplot = np.array([])
     
     for istep in range(0,nstep):
         # Record values for plotting
-        x = state[0]
-        y = state[1] 
-        z = state[2]
+        r = state[0]
+        f = state[1] 
         tplot = np.append(tplot,time)
         tauplot = np.append(tauplot,tau)
-        xplot = np.append(xplot,x)
-        yplot = np.append(yplot,y)
-        zplot = np.append(zplot,z)
+        rplot = np.append(rplot,r)
+        fplot = np.append(fplot,f)
         if( istep%50 ==0 ):
           print('Finished %d steps out of %d '%(istep,nstep))
         # Find new state using Runge-Kutta4
-        #state = rk4(state,time,tau,lorzrk,param)
+        #state = rk4(state,time,tau,lotka_volterra,param)
         #time += tau
-        [state, time, tau] = rka(state,time,tau,err,lorzrk,param)
+        [state, time, tau] = rka(state,time,tau,err,lotka_volterra,param)
     
     # Print max and min time step returned by rka
     print('Adaptive time step: Max = %f,  Min = %f '%(max(tauplot[1:]), min(tauplot[1:])));
@@ -189,38 +178,29 @@ def lorenz_data_gen(init_x,init_y,init_z,init_r):
     plotting = True
     if plotting:
         # Graph the time series x(t)
-        plt.figure(1) 
-        plt.clf()  # Clear figure 1 window and bring forward
-        plt.plot(tplot,xplot,'-')
-        plt.xlabel('Time');  plt.ylabel('x(t)')
-        plt.title('Lorenz model time series')
-        # plt.show()
+        fig,ax = plt.subplots(2,1,sharex = True) 
+        ax[0].plot(tplot,rplot,'-')
+        ax[0].set_ylabel('rabs(t)')
+        ax[0].set_title('Rabbits')
         
-        # Graph the x,y,z phase space trajectory
-        
-        fig=plt.figure(2)
-        ax=p3.Axes3D(fig)
-        ax.plot3D(xplot,yplot,zplot)
-        ax.set_xlabel('x')
-        ax.set_ylabel('y')
-        ax.set_zlabel('z')
-        ax.grid(True)
-        # title('Lorenz model phase space')
-        #ax.set_aspect('equal')
-        plt.show()
+        ax[1].plot(tplot,fplot,'-')
+        ax[1].set_xlabel('Time');  
+        ax[1].set_ylabel('foxez(t)')
+        ax[1].set_title('Foxes')
+                
 
-    return xplot,yplot,zplot,tplot
+    return rplot,fplot,tplot
 
 def lorenz_plot(initial_cond_list):
     
     ic_1 = initial_cond_list[0]
     ic_2 = initial_cond_list[1]
     
-    xplot1,yplot1,zplot1,tplot1 = lorenz_data_gen(ic_1[0],ic_1[1],ic_1[2],ic_1[3])
-    xplot2,yplot2,zplot2,tplot2 = lorenz_data_gen(ic_2[0],ic_2[1],ic_2[2],ic_2[3])
+    rplot1,fplot1,tplot1 = lorenz_data_gen(ic_1[0],ic_1[1],ic_1[3])
+    rplot2,fplot2,tplot2 = lorenz_data_gen(ic_2[0],ic_2[1],ic_2[3])
     
     # Calculate distance
-    d = np.sqrt( (xplot1 - xplot2)**2 + (yplot1 - yplot2)**2 + (zplot1 - zplot2)**2 )
+    d = np.sqrt( (rplot1 - rplot2)**2 + (fplot1 - fplot2)**2 )
     plt.figure(1)
     plt.plot(tplot1,d)
     plt.title("Plot for deviation vs time")
@@ -236,10 +216,11 @@ def lorenz_plot(initial_cond_list):
     
     
 if __name__ == '__main__':
-    initial_cond_list = [(1,1,20,28),(1,1,20.001,28)]
+    
+    initial_cond_list = [(100,5,(10,10**6,.1) )]
     ic_1 = initial_cond_list[0]
     
-    xplot1,yplot1,zplot1,tplot1 = lorenz_data_gen(ic_1[0],ic_1[1],ic_1[2],ic_1[3])
+    rplot1,fplot1,tplot1 = lorenz_data_gen(ic_1[0],ic_1[1],ic_1[2])
     
     #lorenz_plot(initial_cond_list)
 
