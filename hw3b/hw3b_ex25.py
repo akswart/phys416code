@@ -88,7 +88,7 @@ def lorenz_data_gen(init_x,init_y,init_z,r):
 
     """
     # Set initial state x,y,z and parameters r,sigma,b
-    sxin,syin,szin = 1,1,20
+    sxin,syin,szin = 1,1,21
     state = np.zeros(3)
     state[0] = float(sxin); state[1]  = float(syin); state[2]  = float(szin)
     
@@ -143,9 +143,22 @@ def lorenz_data_gen(init_x,init_y,init_z,r):
     # title('Lorenz model phase space')
     ax.set_aspect('equal')
     plt.show()
-
+    
     return xplot,yplot,zplot,tplot
 
-def lorenz_plot(data_list):
-        xplot1,yplot1,zplot1,tplot1 = data_list[0][0],data_list[0][1],data_list[0][2],data_list[0][3]
-        xplot1,yplot2,zplot2,tplot2 = data_list[1][0],data_list[1][1],data_list[1][2],data_list[1][3]
+def lorenz_plot(initial_cond_list):
+    
+    ic_1 = initial_conds[0]
+    ic_2 = initial_conds[1]
+    
+    xplot1,yplot1,zplot1,tplot1 = lorenz_data_gen(ic_1[0],ic_1[1],ic_1[2],ic_1[3])
+    xplot2,yplot2,zplot2,tplot2 = lorenz_data_gen(ic_2[0],ic_2[1],ic_2[2],ic_2[3])
+    
+    # Calculate distance
+    d = np.sqrt( (xplot1 - xplot2)**2 + (yplot1 - yplot2)**2 + (zplot1 - zplot2)**2 )
+    
+    
+if __name__ == '__main__':
+    initial_cond_list = [(1,1,20,28),(1,1,20.001,28)]
+    lorenz_plot(initial_cond_list)
+        
