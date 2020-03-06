@@ -5,19 +5,9 @@ Created on Fri Mar  6 10:59:48 2020
 
 @author: aswart
 """
-
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Mar  5 19:23:19 2020
-
-@author: akswa
-"""
-
 # python 3 version
 import numpy as np
 import matplotlib.pyplot as plt
-import mpl_toolkits.mplot3d.axes3d as p3
-
 
 def rk4(x,t,tau,derivsRK,param):
     """
@@ -100,22 +90,11 @@ def rka(x,t,tau,err,derivsRK,param):
             xSmall = xSmall
             return xSmall, t, tau  
 
-
-def lotka_volterra(s,t,param):
-    a = 10
-    b = 10**6
-    c = .1
-    
-    r = s[0]
-    f = s[1]
-    
-    deriv = np.zeros(2)
-    deriv[0] = a*(1-(r/b))*r - c*r*f
-    deriv[1] = -a*f + c*r*f
-    return deriv
-
 def double_pend(s,t,param):
+    """
+    Defines the system of diff eqs needed for the double pend problem
     
+    """
     theta1 = s[0]
     theta2 = s[1]
     theta1_p = s[2]
@@ -123,21 +102,32 @@ def double_pend(s,t,param):
     
     L1 = param[0]
     L2 = param[1]
-    m1 = 1
-    m2 = param[2]
+    m2 = 1
+    m1 = param[2]
     g = param[3]
     
+    a1 = (L2/L1)*(m2/(m1+m2))*np.cos(theta1-theta2)
+    a2 = (L1/L2)*np.cos(theta1-theta2)    
+    
+    F1 = -(L2/L1)*(m2/(m1+m2))*(theta2_p**2)*np.sin(theta1-theta2) - (g/L1)*np.sin(theta1)
+    F2 = (L1/L2)*(theta1_p**2)*np.sin(theta1-theta2) - (g/L2)*np.sin(theta2)
+    
+    g1 = (F1 - a1*F2) / (1 - a1*a2)
+    g2 = (F2 - a2*F1) / (1 - a1*a2)
+    
     deriv = np.zeros(4)
-    deriv
+    deriv[0] = theta1_p
+    deriv[1] = theta2_p
+    deriv[2] = g1
+    deriv[3] = g2
     
     return deriv
 
 
-def lorenz_data_gen(init_theta1,init_theta2,init_theta1_p,init_theta2_p,param):
+def doublepend_data_gen(init_theta1,init_theta2,init_theta1_p,init_theta2_p,param):
     """
-    Generates data needed to plot the results 
-    of lorentz.py using rk4 as in Ch3 ex 25
-
+    Solves the double pendulum problem
+    
     Parameters
     ----------
     init_theta1, init_theta2 : Float
@@ -146,7 +136,7 @@ def lorenz_data_gen(init_theta1,init_theta2,init_theta1_p,init_theta2_p,param):
         Initial theta prime value.
     param : list
         List of model parameter (L1,L2,mr,g).
-
+        Note than we have m1 = mr*m2
 
     Returns
     -------
@@ -168,8 +158,8 @@ def lorenz_data_gen(init_theta1,init_theta2,init_theta1_p,init_theta2_p,param):
     # Model paramaters
     L1 = param[0]
     L2 = param[1]
-    m1 = 1
-    m2 = param[2]
+    m2 = 1
+    m1 = param[2]
     g = param[3]
     tau = .05      # Initial timestep guess
     err = 1.e-4   # Error tolerance
@@ -205,7 +195,7 @@ def lorenz_data_gen(init_theta1,init_theta2,init_theta1_p,init_theta2_p,param):
         # Find new state using Runge-Kutta4
         #state = rk4(state,time,tau,lotka_volterra,param)
         #time += tau
-        [state, time, tau] = rka(state,time,tau,err,lotka_volterra,param)
+        [state, time, tau] = rka(state,time,tau,err,double_pend,param)
     
     # Print max and min time step returned by rka
     #print('Adaptive time step: Max = %f,  Min = %f '%(max(tauplot[1:]), min(tauplot[1:])));
@@ -214,10 +204,10 @@ def lorenz_data_gen(init_theta1,init_theta2,init_theta1_p,init_theta2_p,param):
     plotting = True
     if plotting:
         # Graph the time series x(t)
-        ax[0].plot(tplot,rplot,'-')
-        ax[0].set_ylabel('rabs(t)')
-        ax[0].set_title('Rabbits')
-
+        plt.figure(1)
+        plt.plot(tplot,th1plot)
+        plt.plot(tplot,th2plot)
+        
     return th1plot,th2plot,th1_p_plot,th2_p_plot,tplot
     
     
@@ -227,10 +217,8 @@ if __name__ == '__main__':
     init_theta2 = np.radians(10)
     init_theta1_p = np.radians(0)
     init_theta2_p = np.radians(0)
-    th1plot,th2plot,th1_p_plot,th2_p_plot,tplot = lorenz_data_gen(init_theta1,init_theta2,init_theta1_p,init_theta2_p,param)
+    th1plot,th2plot,th1_p_plot,th2_p_plot,tplot = doublepend_data_gen(init_theta1,init_theta2,init_theta1_p,init_theta2_p,param)
     
-    #lorenz_plot(initial_cond_list)
-
 
 
 
