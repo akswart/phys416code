@@ -124,7 +124,7 @@ def double_pend(s,t,param):
     return deriv
 
 
-def doublepend_data_gen(init_theta1,init_theta2,init_theta1_p,init_theta2_p,param):
+def doublepend_data_gen(init_theta1,init_theta2,init_theta1_p,init_theta2_p,param,plotting=False):
     """
     Solves the double pendulum problem
     
@@ -162,11 +162,11 @@ def doublepend_data_gen(init_theta1,init_theta2,init_theta1_p,init_theta2_p,para
     m1 = param[2]
     g = param[3]
     tau = .05      # Initial timestep guess
-    err = 1.e-4   # Error tolerance
+    err = 1.e-6   # Error tolerance
     
     # Loop over the desired number of steps
     time = 0
-    nstep = 500
+    nstep = 2000
     # initialize arrays
     tplot = np.array([]) 
     tauplot = np.array([])
@@ -201,7 +201,6 @@ def doublepend_data_gen(init_theta1,init_theta2,init_theta1_p,init_theta2_p,para
     #print('Adaptive time step: Max = %f,  Min = %f '%(max(tauplot[1:]), min(tauplot[1:])));
 
     
-    plotting = True
     if plotting:
         # Graph the time series x(t)
         #plt.figure(1)
@@ -222,7 +221,7 @@ def doublepend_data_gen(init_theta1,init_theta2,init_theta1_p,init_theta2_p,para
         ax.grid()
         
         line, = ax.plot([], [], 'o-', lw=2)
-        time_template = 'time = %.1fs'
+        time_template = 'time = %.1fs / %.1fs'
         time_text = ax.text(0.05, 0.9, '', transform=ax.transAxes)
 
 
@@ -237,7 +236,7 @@ def doublepend_data_gen(init_theta1,init_theta2,init_theta1_p,init_theta2_p,para
             thisy = [0, y1[i], y2[i]]
         
             line.set_data(thisx, thisy)
-            time_text.set_text(time_template % (tplot[i]))
+            time_text.set_text(time_template % (tplot[i],tplot[-1]))
             return line, time_text
 
 
@@ -255,7 +254,7 @@ if __name__ == '__main__':
     init_theta2 = np.radians(10)
     init_theta1_p = np.radians(0)
     init_theta2_p = np.radians(0)
-    th1plot,th2plot,th1_p_plot,th2_p_plot,tplot = doublepend_data_gen(init_theta1,init_theta2,init_theta1_p,init_theta2_p,param)
+    th1plot,th2plot,th1_p_plot,th2_p_plot,tplot = doublepend_data_gen(init_theta1,init_theta2,init_theta1_p,init_theta2_p,param,True)
     
 
 
