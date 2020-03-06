@@ -164,15 +164,15 @@ def lorenz_data_gen(init_r,init_f,param):
         tauplot = np.append(tauplot,tau)
         rplot = np.append(rplot,r)
         fplot = np.append(fplot,f)
-        if( istep%50 ==0 ):
-          print('Finished %d steps out of %d '%(istep,nstep))
+        #if( istep%50 ==0 ):
+          #print('Finished %d steps out of %d '%(istep,nstep))
         # Find new state using Runge-Kutta4
         #state = rk4(state,time,tau,lotka_volterra,param)
         #time += tau
         [state, time, tau] = rka(state,time,tau,err,lotka_volterra,param)
     
     # Print max and min time step returned by rka
-    print('Adaptive time step: Max = %f,  Min = %f '%(max(tauplot[1:]), min(tauplot[1:])));
+    #print('Adaptive time step: Max = %f,  Min = %f '%(max(tauplot[1:]), min(tauplot[1:])));
 
     
     plotting = True
@@ -187,40 +187,18 @@ def lorenz_data_gen(init_r,init_f,param):
         ax[1].set_xlabel('Time');  
         ax[1].set_ylabel('foxez(t)')
         ax[1].set_title('Foxes')
-                
+        fig.suptitle('%s Foxes, %s rabbits' %(init_f,init_r))      
 
     return rplot,fplot,tplot
-
-def lorenz_plot(initial_cond_list):
-    
-    ic_1 = initial_cond_list[0]
-    ic_2 = initial_cond_list[1]
-    
-    rplot1,fplot1,tplot1 = lorenz_data_gen(ic_1[0],ic_1[1],ic_1[3])
-    rplot2,fplot2,tplot2 = lorenz_data_gen(ic_2[0],ic_2[1],ic_2[3])
-    
-    # Calculate distance
-    d = np.sqrt( (rplot1 - rplot2)**2 + (fplot1 - fplot2)**2 )
-    plt.figure(1)
-    plt.plot(tplot1,d)
-    plt.title("Plot for deviation vs time")
-    plt.xlabel("Time")
-    plt.ylabel("Distance between different trajectories")
-    
-    
-    plt.figure(2)
-    plt.semilogy(tplot1,d)
-    plt.title("SemiLogy Plot for deviation vs time")
-    plt.xlabel("Time")
-    plt.ylabel("Distance between different trajectories") 
     
     
 if __name__ == '__main__':
     
-    initial_cond_list = [(100,5,(10,10**6,.1) )]
-    ic_1 = initial_cond_list[0]
     
-    rplot1,fplot1,tplot1 = lorenz_data_gen(ic_1[0],ic_1[1],ic_1[2])
+    for inital_foxes in [5,60,90,100,120,140]:
+        initial_cond_list = [(100,inital_foxes,(10,10**6,.1) )]
+        ic_1 = initial_cond_list[0]
+        rplot1,fplot1,tplot1 = lorenz_data_gen(ic_1[0],ic_1[1],ic_1[2])
     
     #lorenz_plot(initial_cond_list)
 
