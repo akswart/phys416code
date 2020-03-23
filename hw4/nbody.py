@@ -29,6 +29,7 @@ def rk4(x,t,tau,derivsRK):
     F4 = derivsRK(xtemp,t_full);
     xout = x + tau/6.*(F1 + F4 + 2.*(F2+F3));
     return xout;
+
 def rka(x,t,tau,err,derivsRK):
     #import rk4
     #import numpy as np
@@ -88,6 +89,8 @@ def rka(x,t,tau,err,derivsRK):
 #%* Issue error message if error bound never satisfied
     print('ERROR: Adaptive Runge-Kutta routine failed');
     return()
+
+
 def gravrknbodies(s,t):
 #  Returns right-hand side of Kepler ODE; used by Runge-Kutta routines
 #  Inputs
