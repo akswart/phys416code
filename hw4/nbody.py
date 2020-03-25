@@ -90,7 +90,6 @@ def rka(x,t,tau,err,derivsRK):
     print('ERROR: Adaptive Runge-Kutta routine failed');
     return()
 
-
 def gravrknbodies(s,t):
 #  Returns right-hand side of Kepler ODE; used by Runge-Kutta routines
 #  Inputs
@@ -140,9 +139,9 @@ def myrotate(angle):
 GM = 4*np.pi**2 # Grav. const. * Mass of Sun (au^3/yr^2)
 
 
-option=int(input('Choose a solution:\n 1 Figure 8\n 2 Perturbed Figure 8\n \
-3 4 body braid\n 4 5 bodies\n 5 Circle\n 6 Lagrange\n 7 Euler: '))                     
-
+#option=int(input('Choose a solution:\n 1 Figure 8\n 2 Perturbed Figure 8\n \
+#3 4 body braid\n 4 5 bodies\n 5 Circle\n 6 Lagrange\n 7 Euler: '))                     
+option = 7
 if(option==1):
 # figure 8 - 3 bodies
     n_bodies=3
@@ -236,8 +235,86 @@ elif(option==6):
 #    v0[2,:] = (-mass[0]*v0[0,:]-mass[1]*v0[1,:])/mass[2];
 elif(option==7):
     # Eulers colinear solution
-    print('Fill in here..')
-    exit()
+    n_bodies=3
+    r0=np.zeros((n_bodies,2))
+    v0=np.zeros((n_bodies,2))
+    ang = np.zeros(3)
+
+    mass=np.zeros(n_bodies)
+    mass[0] = 1
+    mass[1] = 2
+    mass[2] = 3
+    m1 = mass[0]
+    m2 = mass[1]
+    m3 = mass[2]
+    masst = np.sum(mass)
+
+    euler_poly = lambda L: (m1 + m2)*L**5 + (3*m1 + 2*m2)*L**4 + (3*m1 + m2)*L**3 - \
+                           (m2 + 3*m3)*L**2 - (2*m2 + 3*m3)*L - (m2 + m3)
+    
+    euler_poly_p = lambda L: 5*(m1 + m2)*L**4 + 4*(3*m1 + 2*m2)*L**3 + 3*(3*m1 + m2)*L**2 - \
+                           2*(m2 + 3*m3)*L - (2*m2 + 3*m3)
+    
+    
+    # Newtons method find soln to euler_poly
+    L_0 = 0
+    L_1 = 1
+    a = []
+    while abs(L_0 - L_1) >= 10**-6:
+        L_0 = L_1
+        L_1 = L_0 - (euler_poly(L_0)/euler_poly_p(L_0))
+        a.append(L_0)
+        
+    # Find s
+    # Fix s3
+    s3 = np.array([1,1])
+    # Use lambda to find all other s
+    s1 = L_1*s3 #+ np.array([0,1])
+    s2 = -(1 + L_1)*s3 #+ np.array([0,1])
+    #s3 += np.array([0,1])
+    print(L_1,s1,s2,s3)
+    
+    
+    # Find initial positions
+    x1 = (m3*s2-m2*s3)/masst
+    x2 = (m1*s3-m3*s1)/masst
+    x3 = (m2*s1-m1*s2)/masst
+    
+    #Find init velocities
+    v10_mag = np.sqrt(GM)*(m2**2 + m2*m3 + m3**2)**(3/4) / (np.sqrt(np.linalg.norm(x1)) * masst)
+    v20_mag = -np.sqrt(GM)*(m1**2 + m1*m3 + m3**2)**(3/4) / (np.sqrt(np.linalg.norm(x2)) * masst)
+    v30_mag = np.sqrt(GM)*(m2**2 + m2*m1 + m1**2)**(3/4) / (np.sqrt(np.linalg.norm(x3)) * masst)
+    print('v1',v10_mag)
+    print('v2',v20_mag)
+    print('v3',v30_mag)
+    
+    alph1 = np.arctan(x1[0]/x1[1])
+    v10 = -v10_mag*np.sin(alph1)*np.array([1,0]) \
+        + v10_mag*np.cos(alph1)*np.array([0,1])
+
+    alph2 = np.arctan(x2[0]/x2[1])
+    v20 = -v20_mag*np.sin(alph2)*np.array([1,0]) \
+        + v20_mag*np.cos(alph2)*np.array([0,1])
+
+    alph3 = np.arctan(x3[0]/x3[1])    
+    v30 = -v30_mag*np.sin(alph3)*np.array([1,0]) \
+        + v30_mag*np.cos(alph3)*np.array([0,1])
+    print(alph1,alph2, alph3)
+    
+    
+    
+    # Format like rest of code (because I didnt look at it before doing this)
+    r0[0,:] = x1 
+    r0[1,:] = x2
+    r0[2,:] = x3
+    
+    ang[0] = alph1
+    ang[1] = alph2
+    ang[2] = alph3
+    
+    v0[0,:] = v10
+    v0[1,:] = v20
+    v0[2,:] = v30
 else:
     print('wrong option')
 
@@ -255,13 +332,13 @@ com = np.sum(s0[0:n_bodies,:],axis=0)/masst
 vcom = np.sum(vs0[0:n_bodies,:],axis=0)/masst
 
 print('|Center of mass|=',(np.linalg.norm(com)),' v_com=',np.linalg.norm(vcom))
-
+plt.close('all')
 # plot initial condition
 plt.ion()
 plt.figure(3);
 plt.clf()
 plt.plot(r0[0,0],r0[0,1],'o', r0[1,0],r0[1,1],'x', r0[2,0],r0[2,1],'+')
-plt.plot(com,'ro')
+plt.plot(com[0],com[1],'ro')
 xpoints=np.append(r0[:,0],r0[0,0])
 ypoints=np.append(r0[:,1],r0[0,1])
 plt.plot(xpoints,ypoints,'-')
@@ -282,11 +359,11 @@ state = np.append(r,v);   # Used by R-K routines
 
 #* Loop over desired number of steps using specified numerical method.
 
-nStep = int(input('Enter maximum number of steps: '));
+nStep = 400 #int(input('Enter maximum number of steps: '));
 #tau = float(input('Enter time step (yr): '));
 tau = 1.0e-3 # starting tau
-tmax = float(input('Enter the stop time (yr): '))
-animation =int(input('Enter a 1 for animation: '));
+tmax = 1 #float(input('Enter the stop time (yr): '))
+animation = 0#int(input('Enter a 1 for animation: '));
 
 method=1;
 if method ==0:
@@ -304,15 +381,15 @@ for iStep in range (0,nStep):
 
       #* Record position and energy for plotting.
     if(iStep ==0):
-        xplot = np.append(xplot,r[0:2*n_bodies+1:2]);
-        yplot = np.append(yplot,r[1:2*n_bodies+1:2]);
-        vxplot = np.append(xplot,v[0:2*n_bodies+1:2]);
-        vyplot = np.append(yplot,v[1:2*n_bodies+1:2]);
+        xplot = np.append(xplot,r[0:2*n_bodies+1:2])
+        yplot = np.append(yplot,r[1:2*n_bodies+1:2])
+        vxplot = np.append(xplot,v[0:2*n_bodies+1:2])
+        vyplot = np.append(yplot,v[1:2*n_bodies+1:2])
     else:
-        xplot = np.vstack((xplot,r[0:2*n_bodies+1:2]));
-        yplot = np.vstack((yplot,r[1:2*n_bodies+1:2]));
-        vxplot = np.vstack((xplot,v[0:2*n_bodies+1:2]));
-        vyplot = np.vstack((yplot,v[1:2*n_bodies+1:2]));
+        xplot = np.vstack((xplot,r[0:2*n_bodies+1:2]))
+        yplot = np.vstack((yplot,r[1:2*n_bodies+1:2]))
+        vxplot = np.vstack((xplot,v[0:2*n_bodies+1:2]))
+        vyplot = np.vstack((yplot,v[1:2*n_bodies+1:2]))
 
     tplot   = np.append(tplot,time)
 # potential is relative to the Sun's position
@@ -378,6 +455,7 @@ plt.plot(tplot,kinetic+potential)
 plt.legend(['Potential','Kinetic','Total'])
 plt.xlabel('time(years)')
 plt.show()
+
 
 if (animation==1):
     # plt.ion() # uncomment this and the plt.ioff() to see if it helps
