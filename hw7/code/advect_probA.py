@@ -4,12 +4,15 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 from mpl_toolkits.mplot3d import Axes3D
 
+
 """
 The wave gets absorbed by the boundary, 
 this is expected, since the boundaries are fixed in position 
 but allowed to rotate freely since no constraints are place upon thier derivatives
 
 """
+
+
 
 
 # advect - Program to solve the advection equation 

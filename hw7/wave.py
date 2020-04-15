@@ -6,7 +6,7 @@ from mpl_toolkits.mplot3d import Axes3D
 # advect - Program to solve the advection equation 
 # using the various hyperbolic PDE schemes
 # clear all  help advect  # Clear memory and print header
-
+plt.close('all')
 #* Select numerical parameters (time step, grid spacing, etc.).
 method = 1
 #N = int(input('Enter number of grid points: '))
@@ -17,24 +17,25 @@ c = 1.      # Wave speed
 print('Time for wave to move one grid spacing is ',h/c)
 #tau = float(input('Enter time step: '))
 tau = .2*h/c
-coeff = -c*tau/(2.*h)  # Coefficient used by all schemes
-coefflw = 2*coeff**2    # Coefficient used by L-W scheme
-coeff_wave = 4*coeff**2    # Coefficient used by L-W scheme
+
+coeff = (c*tau/h)**2    # Coefficient used by L-W scheme
 
 print('Wave circles system in %6.2f steps'%(L/(c*tau)))
 #nStep = int(input('Enter number of steps: '))
-nStep = int(L/(c*tau))
+nStep = int(2*L/(c*tau))
 #* Set initial and boundary conditions.
 sigma = 0.1              # Width of the Gaussian pulse
 k_wave = np.pi/sigma        # Wave number of the cosine
 x = (np.arange(-1,N+1)+1./2.)*h - L/2  # Coordinates of grid points
 # Initial condition is a Gaussian-cosine pulse
 x0 = 0
-a = np.cos(k_wave*(x-x0)) * np.exp(-(x-x0)**2/(2*sigma**2))
+a =  np.cos(k_wave*(x-x0)) * np.exp(-(x-x0)**2/(2*sigma**2))
+#a =  np.exp(-(x-x0)**2/(2*sigma**2))
 
 # Use dirichlet boundary conditions
 a[0] = 0
 a[-1] = 0
+
 # could also use np.roll here
 ip = np.arange(1,N+1)+1
 im = np.arange(1,N+1)-1
@@ -55,10 +56,10 @@ a_new = a
 for iStep in range(1,nStep+1):  ## MAIN LOOP ##
     
     #* Compute new values of wave equation, 
-    if( method == 1 ):      ### FTCS method ###
-        a_new[1:N+1] = 2*a[1:N+1] - a_old[1:N+1] + coeff_wave*(a[ip]-2*a[1:N+1]+a[im])
+    if( method == 1 ):      
+        a_new[1:N+1] = 2*a[1:N+1] - a_old[1:N+1] + coeff*(a[ip]-2*a[1:N+1]+a[im])
         a_new[0] = 0
-        a_new[N] = 0
+        a_new[-1] = 0
         
         a_old = a
         a = a_new
