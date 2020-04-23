@@ -156,13 +156,32 @@ def corona(N_scale):
 Lets benchmark convergence speed for a bunch of different grid sizes
 
 """
+"""
 
-import multiprocessing
+beg_scale = .5
+end_scale = 1
+num_point = 5
 
+times = [] # Append tuple of (scale, time, interations) 
+
+scales = np.linspace(beg_scale,end_scale,num_point)
+
+# Start parallel pool
+p = multiprocessing.Pool()
+result = p.map(corona,scales)
+p.close()
+p.join()
+for i in range(len(result)):
+    times.append( (scales[i], result[i][1], result[i][0]) )
+
+
+"""
 if __name__ == "__main__":
+    import multiprocessing
+    
     beg_scale = .5
-    end_scale = 2
-    num_point = 10
+    end_scale = 1
+    num_point = 5
     
     times = [] # Append tuple of (scale, time, interations) 
     
@@ -175,7 +194,14 @@ if __name__ == "__main__":
     p.join()
     for i in range(len(result)):
         times.append( (scales[i], result[i][1], result[i][0]) )
-    print(times)
+    
+    import pandas as pd
+    df = pd.DataFrame(times)
+    df.columns = ["Scale","Time","Iterations"]
+    df.to_csv("outputfile.csv",index=False)    
+
+
+
 
 
 
