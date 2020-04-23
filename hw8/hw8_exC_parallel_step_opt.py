@@ -160,8 +160,8 @@ Lets benchmark convergence speed for a bunch of different grid sizes
 if __name__ == "__main__":
     import multiprocessing
     
-    beg_scale = .5
-    end_scale = 6
+    beg_scale = .1
+    end_scale = 5
     num_point = 500
     
     times = [] # Append tuple of (scale, time, interations) 
