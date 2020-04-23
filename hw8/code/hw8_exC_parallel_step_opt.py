@@ -174,8 +174,8 @@ if __name__ == "__main__":
     import multiprocessing
     
     beg_scale = .5
-    end_scale = 1
-    num_point = 5
+    end_scale = 6
+    num_point = 500
     
     times = [] # Append tuple of (scale, time, interations) 
     

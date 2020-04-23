@@ -8,7 +8,9 @@ Created on Wed Apr 22 22:06:54 2020
 Graphing the output of hw8_exC_parallel_step_opt.py given in outputfile.csv
 
 The provided output.csv is from a run done on my server with the following parameters:
-    
+    beg_scale = .5
+    end_scale = 6
+    num_point = 500
 
 """
 
