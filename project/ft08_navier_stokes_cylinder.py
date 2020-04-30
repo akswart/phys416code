@@ -122,10 +122,12 @@ timeseries_p = TimeSeries('navier_stokes_cylinder/pressure_series')
 progress = dolfin.Progress('Time-stepping',num_steps)
 set_log_level(LogLevel.PROGRESS)
 
+
 # Time-stepping
 t = 0
 for n in range(num_steps):
 
+    set_log_level(LogLevel.ERROR)
     # Update current time
     t += dt
 
@@ -160,8 +162,9 @@ for n in range(num_steps):
     p_n.assign(p_)
 
     # Update progress bar
+    set_log_level(LogLevel.PROGRESS)
     progress += 1
     #print('u max:', u_.vector().array().max())
-
+    
 tf = time.time()
 print(tf-t0)
