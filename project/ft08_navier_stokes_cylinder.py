@@ -12,6 +12,9 @@ from fenics import *
 from mshr import *
 import numpy as np
 import dolfin
+import time
+t0 = time.time()
+
 
 T = 5.0            # final time
 num_steps = 5000   # number of time steps
@@ -23,7 +26,7 @@ rho = 1            # density
 channel = Rectangle(Point(0, 0), Point(2.2, 0.41))
 cylinder = Circle(Point(0.2, 0.2), 0.05)
 domain = channel - cylinder
-mesh = generate_mesh(domain, 64)
+mesh = generate_mesh(domain, 32) # Orig val 64, try lower?
 
 # Define function spaces
 V = VectorFunctionSpace(mesh, 'P', 2)
@@ -160,5 +163,5 @@ for n in range(num_steps):
     progress += 1
     #print('u max:', u_.vector().array().max())
 
-# Hold plot
-interactive()
+tf = time.time()
+print(tf-t0)
