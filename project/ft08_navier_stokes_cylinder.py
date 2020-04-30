@@ -7,31 +7,155 @@ Scheme (IPCS).
                                  div(u) = 0
 """
 
-from __future__ import print_function
-from fenics import *
-from mshr import *
+import fenics as fs
+from fenics import dot,dx,nabla_grad,ds,inner,div # Import math operations by name to clean up code
+import mshr
+#from mshr import *
 import numpy as np
 import dolfin
 import time
+from tqdm import tqdm # Way lower overhead than ProgressBar 60ns per iter vs 800ns see github
+import os
 t0 = time.time()
 
 
+# Clean up output directory before running
+
+if os.name == 'nt': #For windows systtems
+    dirs = os.listdir()
+    if 'navier_stokes_cylinder' in dirs:
+        try: # Do a try incase zipping fails
+            #We will append this time to the filename to make it unique 
+            sys_time = time.time() # Num of seconds since the epoch
+
+            from zipfile import ZipFile 
+  
+            def get_all_file_paths(directory): 
+              
+                # initializing empty file paths list 
+                file_paths = [] 
+              
+                # crawling through directory and subdirectories 
+                for root, directories, files in os.walk(directory): 
+                    for filename in files: 
+                        # join the two strings in order to form the full filepath. 
+                        filepath = os.path.join(root, filename) 
+                        file_paths.append(filepath) 
+              
+                # returning all file paths 
+                return file_paths  
+
+                # path to folder which needs to be zipped 
+            directory = './navier_stokes_cylinder'
+          
+            # calling function to get all file paths in the directory 
+            file_paths = get_all_file_paths(directory) 
+          
+            # printing the list of all files to be zipped 
+            print('Following files will be zipped:') 
+            for file_name in file_paths: 
+                print(file_name) 
+          
+            # writing files to a zipfile
+            print("Zipping old output files")
+            with ZipFile(f'navier_stokes_cylinder{sys_time}.zip','w') as zip: 
+                # writing each file one by one 
+                for file in tqdm(file_paths): 
+                    zip.write(file) 
+            print('All files zipped successfully!')
+            os.system("rmdir /Q /S navier_stokes_cylinder") # Remove old folder
+        except:
+            raise UserWarning("compressed backup not made, output dir will be deleted")
+            os.system('rm -rf navier_stokes_cylinder')
+
+elif os.name == 'posix': # For linux and mac
+    dirs = os.listdir()
+    if "archive" not in dirs: # If we dont already have an archive, make one
+        os.system("mkdir archive")
+        print("Made archive folder to store old results")
+    else:
+        print("Putting old output into folder: archive")
+    if 'navier_stokes_cylinder' in dirs:
+        try: # Do a try, except in case tar is not installed to zip files
+            #We will append this time to the filename to make it unique 
+            sys_time = time.time() # Num of seconds since the epoch
+            print("Compressing old files")
+            os.system(f"tar -czvf ./archive/navier_stokes_cylinder{sys_time}.tar.gz navier_stokes_cylinder")
+            print("Deleting old files")
+            os.system('rm -rf navier_stokes_cylinder')
+        except: # If tar is not installed attempt to do it with zipfile but its not as fast as tar
+            #raise UserWarning("tar not found, compressed backup not made, output dir will be deleted")
+            #os.system('rm -rf navier_stokes_cylinder')
+            #"""
+            raise UserWarning("tar not found")
+            try:
+                #We will append this time to the filename to make it unique 
+                sys_time = time.time() # Num of seconds since the epoch
+    
+                from zipfile import ZipFile 
+      
+                def get_all_file_paths(directory): 
+                  
+                    # initializing empty file paths list 
+                    file_paths = [] 
+                  
+                    # crawling through directory and subdirectories 
+                    for root, directories, files in os.walk(directory): 
+                        for filename in files: 
+                            # join the two strings in order to form the full filepath. 
+                            filepath = os.path.join(root, filename) 
+                            file_paths.append(filepath) 
+                  
+                    # returning all file paths 
+                    return file_paths  
+    
+                # path to folder which needs to be zipped 
+                directory = './navier_stokes_cylinder'
+              
+                # calling function to get all file paths in the directory 
+                file_paths = get_all_file_paths(directory) 
+              
+                # printing the list of all files to be zipped 
+                print('Following files will be zipped:') 
+                for file_name in file_paths: 
+                    print(file_name) 
+              
+                # writing files to a zipfile
+                print("Zipping old output files")
+                with ZipFile(f'navier_stokes_cylinder{sys_time}.zip','w') as zip: 
+                    # writing each file one by one 
+                    for file in tqdm(file_paths): 
+                        zip.write(file) 
+                print('All files zipped successfully!')                
+                os.system('rm -rf navier_stokes_cylinder')    
+            except:
+                raise UserWarning("tar not found, compressed backup not made, output dir will be deleted")
+                os.system('rm -rf navier_stokes_cylinder')
+             #   """
+else: # System not recognized
+    raise UserWarning("system not recognized, compressed backup not made, output dir must be deleted manually")
+
+
+print("Starting to solve incompressible Navier–Stokes equations")
 T = 5.0            # final time
 num_steps = 5000   # number of time steps
 dt = T / num_steps # time step size
 mu = 0.001         # dynamic viscosity
 rho = 1            # density
 
+print("Creating mesh")
 # Create mesh
-channel = Rectangle(Point(0, 0), Point(2.2, 0.41))
-cylinder = Circle(Point(0.2, 0.2), 0.05)
+channel = mshr.Rectangle(fs.Point(0, 0), fs.Point(2.2, 0.41))
+cylinder = mshr.Circle(fs.Point(0.2, 0.2), 0.05)
 domain = channel - cylinder
-mesh = generate_mesh(domain, 32) # Orig val 64, try lower?
+mesh = mshr.generate_mesh(domain, 16) # Orig val 64, try lower?
 
 # Define function spaces
-V = VectorFunctionSpace(mesh, 'P', 2)
-Q = FunctionSpace(mesh, 'P', 1)
+V = fs.VectorFunctionSpace(mesh, 'P', 2)
+Q = fs.FunctionSpace(mesh, 'P', 1)
 
+
+print("Defining boundary conds")
 # Define boundaries
 inflow   = 'near(x[0], 0)'
 outflow  = 'near(x[0], 2.2)'
@@ -42,40 +166,41 @@ cylinder = 'on_boundary && x[0]>0.1 && x[0]<0.3 && x[1]>0.1 && x[1]<0.3'
 inflow_profile = ('4.0*1.5*x[1]*(0.41 - x[1]) / pow(0.41, 2)', '0')
 
 # Define boundary conditions
-bcu_inflow = DirichletBC(V, Expression(inflow_profile, degree=2), inflow)
-bcu_walls = DirichletBC(V, Constant((0, 0)), walls)
-bcu_cylinder = DirichletBC(V, Constant((0, 0)), cylinder)
-bcp_outflow = DirichletBC(Q, Constant(0), outflow)
+bcu_inflow = fs.DirichletBC(V, fs.Expression(inflow_profile, degree=2), inflow)
+bcu_walls = fs.DirichletBC(V, fs.Constant((0, 0)), walls)
+bcu_cylinder = fs.DirichletBC(V, fs.Constant((0, 0)), cylinder)
+bcp_outflow = fs.DirichletBC(Q, fs.Constant(0), outflow)
 bcu = [bcu_inflow, bcu_walls, bcu_cylinder]
 bcp = [bcp_outflow]
 
 # Define trial and test functions
-u = TrialFunction(V)
-v = TestFunction(V)
-p = TrialFunction(Q)
-q = TestFunction(Q)
+u = fs.TrialFunction(V)
+v = fs.TestFunction(V)
+p = fs.TrialFunction(Q)
+q = fs.TestFunction(Q)
 
 # Define functions for solutions at previous and current time steps
-u_n = Function(V)
-u_  = Function(V)
-p_n = Function(Q)
-p_  = Function(Q)
+u_n = fs.Function(V)
+u_  = fs.Function(V)
+p_n = fs.Function(Q)
+p_  = fs.Function(Q)
 
 # Define expressions used in variational forms
 U  = 0.5*(u_n + u)
-n  = FacetNormal(mesh)
-f  = Constant((0, 0))
-k  = Constant(dt)
-mu = Constant(mu)
-rho = Constant(rho)
+n  = fs.FacetNormal(mesh)
+f  = fs.Constant((0, 0))
+k  = fs.Constant(dt)
+mu = fs.Constant(mu)
+rho = fs.Constant(rho)
 
 # Define symmetric gradient
 def epsilon(u):
-    return sym(nabla_grad(u))
+    return fs.sym(fs.nabla_grad(u))
 
 # Define stress tensor
 def sigma(u, p):
-    return 2*mu*epsilon(u) - p*Identity(len(u))
+    return 2*mu*epsilon(u) - p*fs.Identity(len(u))
+
 
 # Define variational problem for step 1
 F1 = rho*dot((u - u_n) / k, v)*dx \
@@ -83,8 +208,8 @@ F1 = rho*dot((u - u_n) / k, v)*dx \
    + inner(sigma(U, p_n), epsilon(v))*dx \
    + dot(p_n*n, v)*ds - dot(mu*nabla_grad(U)*n, v)*ds \
    - dot(f, v)*dx
-a1 = lhs(F1)
-L1 = rhs(F1)
+a1 = fs.lhs(F1)
+L1 = fs.rhs(F1)
 
 # Define variational problem for step 2
 a2 = dot(nabla_grad(p), nabla_grad(q))*dx
@@ -95,59 +220,59 @@ a3 = dot(u, v)*dx
 L3 = dot(u_, v)*dx - k*dot(nabla_grad(p_ - p_n), v)*dx
 
 # Assemble matrices
-A1 = assemble(a1)
-A2 = assemble(a2)
-A3 = assemble(a3)
+A1 = fs.assemble(a1)
+A2 = fs.assemble(a2)
+A3 = fs.assemble(a3)
 
 # Apply boundary conditions to matrices
 [bc.apply(A1) for bc in bcu]
 [bc.apply(A2) for bc in bcp]
 
 # Create XDMF files for visualization output
-xdmffile_u = XDMFFile('navier_stokes_cylinder/velocity.xdmf')
-xdmffile_p = XDMFFile('navier_stokes_cylinder/pressure.xdmf')
+xdmffile_u = fs.XDMFFile('navier_stokes_cylinder/velocity.xdmf')
+xdmffile_p = fs.XDMFFile('navier_stokes_cylinder/pressure.xdmf')
 
-hdf = HDF5File(mesh.mpi_comm(), "navier_stokes_cylinder/file.h5", "w")
+hdf = fs.HDF5File(mesh.mpi_comm(), "navier_stokes_cylinder/file.h5", "w")
 hdf.write(mesh, "/mesh")
 
 
 # Create time series (for use in reaction_system.py)
-timeseries_u = TimeSeries('navier_stokes_cylinder/velocity_series')
-timeseries_p = TimeSeries('navier_stokes_cylinder/pressure_series')
+timeseries_u = fs.TimeSeries('navier_stokes_cylinder/velocity_series')
+timeseries_p = fs.TimeSeries('navier_stokes_cylinder/pressure_series')
 
 # Save mesh to file (for use in reaction_system.py)
 #File('navier_stokes_cylinder/cylinder.xml.gz') << mesh
 
 # Create progress bar
 progress = dolfin.Progress('Time-stepping',num_steps)
-set_log_level(LogLevel.PROGRESS)
+fs.set_log_level(fs.LogLevel.PROGRESS)
 
 
 # Time-stepping
 t = 0
-for n in range(num_steps):
+for n in tqdm(range(num_steps)):
 
-    set_log_level(LogLevel.ERROR)
+    fs.set_log_level(fs.LogLevel.ERROR) # Only log explody stuff
     # Update current time
     t += dt
 
     # Step 1: Tentative velocity step
-    b1 = assemble(L1)
+    b1 = fs.assemble(L1)
     [bc.apply(b1) for bc in bcu]
-    solve(A1, u_.vector(), b1, 'bicgstab', 'hypre_amg')
+    fs.solve(A1, u_.vector(), b1, 'bicgstab', 'hypre_amg')
 
     # Step 2: Pressure correction step
-    b2 = assemble(L2)
+    b2 = fs.assemble(L2)
     [bc.apply(b2) for bc in bcp]
-    solve(A2, p_.vector(), b2, 'bicgstab', 'hypre_amg')
+    fs.solve(A2, p_.vector(), b2, 'bicgstab', 'hypre_amg')
 
     # Step 3: Velocity correction step
-    b3 = assemble(L3)
-    solve(A3, u_.vector(), b3, 'cg', 'sor')
+    b3 = fs.assemble(L3)
+    fs.solve(A3, u_.vector(), b3, 'cg', 'sor')
 
     # Plot solution
-    plot(u_, title='Velocity')
-    plot(p_, title='Pressure')
+    fs.plot(u_, title='Velocity')
+    fs.plot(p_, title='Pressure')
 
     # Save solution to file (XDMF/HDF5)
     xdmffile_u.write(u_, t)
@@ -162,7 +287,7 @@ for n in range(num_steps):
     p_n.assign(p_)
 
     # Update progress bar
-    set_log_level(LogLevel.PROGRESS)
+    #set_log_level(LogLevel.PROGRESS)
     progress += 1
     #print('u max:', u_.vector().array().max())
     
