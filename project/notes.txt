@@ -5,4 +5,7 @@ Optimize grid size (opt)
 Put dune shape in
 
 
-32 grid - Laptop 1635.011 command line
+32 grid - Laptop 1635.011 command line 1458 with new changes
+
+
+32 grid - Server 3143.14 single thread 5796 multi
