@@ -1,13 +1,17 @@
-# -*- coding: utf-8 -*-
 """
-Created on Wed Apr 29 16:24:51 2020
+FEniCS tutorial demo program: Incompressible Navier-Stokes equations
+for flow around a cylinder using the Incremental Pressure Correction
+Scheme (IPCS).
 
-@author: akswa
+  u' + u . nabla(u)) - div(sigma(u, p)) = f
+                                 div(u) = 0
 """
 
+from __future__ import print_function
 from fenics import *
 from mshr import *
 import numpy as np
+import dolfin
 
 T = 5.0            # final time
 num_steps = 5000   # number of time steps
@@ -71,10 +75,11 @@ def sigma(u, p):
     return 2*mu*epsilon(u) - p*Identity(len(u))
 
 # Define variational problem for step 1
-F1 = rho*dot((u - u_n) / k, v)*dx + rho*dot(dot(u_n, nabla_grad(u_n)), v)*dx + \
-    inner(sigma(U, p_n), epsilon(v))*dx + \
-        dot(p_n*n, v)*ds - dot(mu*nabla_grad(U)*n, v)*ds - \
-            dot(f, v)*dx
+F1 = rho*dot((u - u_n) / k, v)*dx \
+   + rho*dot(dot(u_n, nabla_grad(u_n)), v)*dx \
+   + inner(sigma(U, p_n), epsilon(v))*dx \
+   + dot(p_n*n, v)*ds - dot(mu*nabla_grad(U)*n, v)*ds \
+   - dot(f, v)*dx
 a1 = lhs(F1)
 L1 = rhs(F1)
 
@@ -99,15 +104,19 @@ A3 = assemble(a3)
 xdmffile_u = XDMFFile('navier_stokes_cylinder/velocity.xdmf')
 xdmffile_p = XDMFFile('navier_stokes_cylinder/pressure.xdmf')
 
+hdf = HDF5File(mesh.mpi_comm(), "navier_stokes_cylinder/file.h5", "w")
+hdf.write(mesh, "/mesh")
+
+
 # Create time series (for use in reaction_system.py)
 timeseries_u = TimeSeries('navier_stokes_cylinder/velocity_series')
 timeseries_p = TimeSeries('navier_stokes_cylinder/pressure_series')
 
 # Save mesh to file (for use in reaction_system.py)
-File('navier_stokes_cylinder/cylinder.xml.gz') << mesh
+#File('navier_stokes_cylinder/cylinder.xml.gz') << mesh
 
 # Create progress bar
-progress = Progress('Time-stepping')
+progress = dolfin.Progress('Time-stepping',num_steps)
 set_log_level(LogLevel.PROGRESS)
 
 # Time-stepping
@@ -148,8 +157,8 @@ for n in range(num_steps):
     p_n.assign(p_)
 
     # Update progress bar
-    #progress.update(t / T)
+    progress += 1
     #print('u max:', u_.vector().array().max())
 
 # Hold plot
-#interactive()
+interactive()
