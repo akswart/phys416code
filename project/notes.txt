@@ -1,6 +1,7 @@
 TODO:
 Automate vis
-Clean up progressmessages
+DONE  - Clean up progressmessages
+DONE - Streamline file storage
 Optimize grid size (opt)
 Put dune shape in
 
