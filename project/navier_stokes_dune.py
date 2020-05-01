@@ -1,6 +1,6 @@
 """
 Incompressible Navier-Stokes equations
-for flow around a cylinder using the Incremental Pressure Correction
+for flow over a sand dune using the Incremental Pressure Correction
 Scheme (IPCS).
 
   u' + u . nabla(u)) - div(sigma(u, p)) = f
@@ -21,7 +21,6 @@ import mshr
 import numpy as np
 import time
 
-from tqdm import tqdm_gui
 from tqdm import tqdm # Way lower overhead than ProgressBar 60ns per iter vs 800ns see github
 
 import os
@@ -140,7 +139,7 @@ elif os.name == 'posix': # For linux and mac
             except:
                 raise UserWarning("tar not found, compressed backup not made, output dir will be deleted")
                 os.system('rm -rf navier_stokes_cylinder')
-             #   """
+   
 else: # System not recognized
     raise UserWarning("system not recognized, compressed backup not made, output dir must be deleted manually")
 
@@ -157,7 +156,7 @@ print("Creating mesh")
 channel = mshr.Rectangle(fs.Point(0, 0), fs.Point(2.2, 0.41))
 cylinder = mshr.Circle(fs.Point(0.2, 0.2), 0.05)
 domain = channel - cylinder
-mesh = mshr.generate_mesh(domain, 32) # Orig val 64, try lower?
+mesh = mshr.generate_mesh(domain, 64) # Orig val 64, try lower?
 
 # Define function spaces
 V = fs.VectorFunctionSpace(mesh, 'P', 2)
@@ -260,7 +259,7 @@ fs.set_log_level(fs.LogLevel.PROGRESS)
 # Time-stepping
 print("Time Stepping")
 t = 0
-for n in tqdm_gui(range(num_steps)):
+for n in tqdm(range(num_steps)):
 
     fs.set_log_level(fs.LogLevel.ERROR) # Only log explody stuff
     # Update current time
