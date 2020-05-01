@@ -17,6 +17,7 @@ outputs when I ran it in spyder, but ran perfectly from command line. No idea wh
 import fenics as fs
 from fenics import dot,dx,nabla_grad,ds,inner,div # Import math operations by name to clean up code
 import mshr
+from dune_mesh import generate_dune_mesh
 #from mshr import *
 import numpy as np
 import time
@@ -31,7 +32,7 @@ t0 = time.time()
 
 if os.name == 'nt': #For windows systtems
     dirs = os.listdir()
-    if 'navier_stokes_cylinder' in dirs:
+    if 'navier_stokes_dune' in dirs:
         try: # Do a try incase zipping fails
             #We will append this time to the filename to make it unique 
             sys_time = time.time() # Num of seconds since the epoch
@@ -54,7 +55,7 @@ if os.name == 'nt': #For windows systtems
                 return file_paths  
 
                 # path to folder which needs to be zipped 
-            directory = './navier_stokes_cylinder'
+            directory = './navier_stokes_dune'
           
             # calling function to get all file paths in the directory 
             file_paths = get_all_file_paths(directory) 
@@ -66,15 +67,15 @@ if os.name == 'nt': #For windows systtems
           
             # writing files to a zipfile
             print("Zipping old output files")
-            with ZipFile(f'navier_stokes_cylinder{sys_time}.zip','w') as zip: 
+            with ZipFile(f'navier_stokes_dune{sys_time}.zip','w') as zip: 
                 # writing each file one by one 
                 for file in tqdm(file_paths): 
                     zip.write(file) 
             print('All files zipped successfully!')
-            os.system("rmdir /Q /S navier_stokes_cylinder") # Remove old folder
+            os.system("rmdir /Q /S navier_stokes_dune") # Remove old folder
         except:
             raise UserWarning("compressed backup not made, output dir will be deleted")
-            os.system('rm -rf navier_stokes_cylinder')
+            os.system('rm -rf navier_stokes_dune')
 
 elif os.name == 'posix': # For linux and mac
     dirs = os.listdir()
@@ -83,14 +84,14 @@ elif os.name == 'posix': # For linux and mac
         print("Made archive folder to store old results")
     else:
         print("Putting old output into folder: archive")
-    if 'navier_stokes_cylinder' in dirs:
+    if 'navier_stokes_dune' in dirs:
         try: # Do a try, except in case tar is not installed to zip files
             #We will append this time to the filename to make it unique 
             sys_time = time.time() # Num of seconds since the epoch
             print("Compressing old files")
-            os.system(f"tar -czvf ./archive/navier_stokes_cylinder{sys_time}.tar.gz navier_stokes_cylinder")
+            os.system(f"tar -czvf ./archive/navier_stokes_dune{sys_time}.tar.gz navier_stokes_dune")
             print("Deleting old files")
-            os.system('rm -rf navier_stokes_cylinder')
+            os.system('rm -rf navier_stokes_dune')
         except: # If tar is not installed attempt to do it with zipfile but its not as fast as tar
             #raise UserWarning("tar not found, compressed backup not made, output dir will be deleted")
             #os.system('rm -rf navier_stokes_cylinder')
@@ -118,7 +119,7 @@ elif os.name == 'posix': # For linux and mac
                     return file_paths  
     
                 # path to folder which needs to be zipped 
-                directory = './navier_stokes_cylinder'
+                directory = './navier_stokes_dune'
               
                 # calling function to get all file paths in the directory 
                 file_paths = get_all_file_paths(directory) 
@@ -130,33 +131,33 @@ elif os.name == 'posix': # For linux and mac
               
                 # writing files to a zipfile
                 print("Zipping old output files")
-                with ZipFile(f'navier_stokes_cylinder{sys_time}.zip','w') as zip: 
+                with ZipFile(f'navier_stokes_dune{sys_time}.zip','w') as zip: 
                     # writing each file one by one 
                     for file in tqdm(file_paths): 
                         zip.write(file) 
                 print('All files zipped successfully!')                
-                os.system('rm -rf navier_stokes_cylinder')    
+                os.system('rm -rf navier_stokes_dune')    
             except:
                 raise UserWarning("tar not found, compressed backup not made, output dir will be deleted")
-                os.system('rm -rf navier_stokes_cylinder')
+                os.system('rm -rf navier_stokes_dune')
    
 else: # System not recognized
     raise UserWarning("system not recognized, compressed backup not made, output dir must be deleted manually")
 
 
 print("Starting to solve incompressible Navier–Stokes equations")
-T = 5.0            # final time
-num_steps = 5000   # number of time steps
+T = 1.0            # final time
+num_steps = 2000   # number of time steps
 dt = T / num_steps # time step size
+print(dt)
 mu = 0.001         # dynamic viscosity
 rho = 1            # density
 
 print("Creating mesh")
-# Create mesh
-channel = mshr.Rectangle(fs.Point(0, 0), fs.Point(2.2, 0.41))
-cylinder = mshr.Circle(fs.Point(0.2, 0.2), 0.05)
-domain = channel - cylinder
-mesh = mshr.generate_mesh(domain, 64) # Orig val 64, try lower?
+# Create mesh, from dune_mesh
+large_scale = True
+mesh = generate_dune_mesh(large_scale,16)  # True is large scale view, using 16 grid points initaly for fast testing runs
+#mesh = mshr.generate_mesh(mshr.Rectangle(fs.Point(0, 0), fs.Point(2.2, .41)),16)
 
 # Define function spaces
 V = fs.VectorFunctionSpace(mesh, 'P', 2)
@@ -165,21 +166,35 @@ Q = fs.FunctionSpace(mesh, 'P', 1)
 
 print("Defining boundary conds")
 # Define boundaries
-inflow   = 'near(x[0], 0)'
-outflow  = 'near(x[0], 2.2)'
-walls    = 'near(x[1], 0) || near(x[1], 0.41)'
-cylinder = 'on_boundary && x[0]>0.1 && x[0]<0.3 && x[1]>0.1 && x[1]<0.3'
+if large_scale: # Different boundaries for zoomed out view x=(-4,20) y=(0,10)
+    inflow   = 'near(x[0], 0)'
+    outflow  = 'near(x[0], 2.2)'
+    walls    = 'near(x[1], .41)'
+    # The dune goes from x(-2,10) y=(0,1)
+    # So, if we capture all points in this region and part of a boundary, 
+    # we can set the boundary conditions for the dune
+    dune = 'near(x[1], 0) || on_boundary && x[0]>.05 && x[0]<.71 && x[1]>0 && x[1]<.15'
+    
+    
+#inflow   = 'near(x[0], 0)' # Inflow and outflow are unchanged
+#outflow  = 'near(x[0], 2.2)'
+#walls    = 'near(x[1], 0) || near(x[1], 0.41)'
+#cylinder = 'on_boundary && x[0]>0.1 && x[0]<0.3 && x[1]>0.1 && x[1]<0.3'
 
 # Define inflow profile
-inflow_profile = ('4.0*1.5*x[1]*(0.41 - x[1]) / pow(0.41, 2)', '0')
+#inflow_profile = ('.015*x[1]*(0.41 - x[1]) / pow(0.41, 2)', '0')
 
 # Define boundary conditions
-bcu_inflow = fs.DirichletBC(V, fs.Expression(inflow_profile, degree=2), inflow)
 bcu_walls = fs.DirichletBC(V, fs.Constant((0, 0)), walls)
-bcu_cylinder = fs.DirichletBC(V, fs.Constant((0, 0)), cylinder)
+bcu_dune = fs.DirichletBC(V, fs.Constant((0, 0)), dune)
+
+#bcu_inflow = fs.DirichletBC(V, fs.Expression(inflow_profile, degree=2), inflow)
+
+bcp_inflow = fs.DirichletBC(Q, fs.Constant(.5), inflow)
 bcp_outflow = fs.DirichletBC(Q, fs.Constant(0), outflow)
-bcu = [bcu_inflow, bcu_walls, bcu_cylinder]
-bcp = [bcp_outflow]
+bcu = [bcu_walls, bcu_dune]
+#bcu = [bcu_inflow,bcu_walls]
+bcp = [bcp_inflow, bcp_outflow]
 
 # Define trial and test functions
 u = fs.TrialFunction(V)
@@ -237,16 +252,16 @@ A3 = fs.assemble(a3)
 [bc.apply(A2) for bc in bcp]
 
 # Create XDMF files for visualization output
-xdmffile_u = fs.XDMFFile('navier_stokes_cylinder/velocity.xdmf')
-xdmffile_p = fs.XDMFFile('navier_stokes_cylinder/pressure.xdmf')
+xdmffile_u = fs.XDMFFile('navier_stokes_dune/velocity.xdmf')
+xdmffile_p = fs.XDMFFile('navier_stokes_dune/pressure.xdmf')
 
-hdf = fs.HDF5File(mesh.mpi_comm(), "navier_stokes_cylinder/file.h5", "w")
+hdf = fs.HDF5File(mesh.mpi_comm(), "navier_stokes_dune/file.h5", "w")
 hdf.write(mesh, "/mesh")
 
 
 # Create time series (for use in reaction_system.py)
-timeseries_u = fs.TimeSeries('navier_stokes_cylinder/velocity_series')
-timeseries_p = fs.TimeSeries('navier_stokes_cylinder/pressure_series')
+timeseries_u = fs.TimeSeries('navier_stokes_dune/velocity_series')
+timeseries_p = fs.TimeSeries('navier_stokes_dune/pressure_series')
 
 # Save mesh to file (for use in reaction_system.py)
 #File('navier_stokes_cylinder/cylinder.xml.gz') << mesh
