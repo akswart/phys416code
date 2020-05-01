@@ -3,8 +3,10 @@ Automate vis
 DONE  - Clean up progressmessages
 DONE - Streamline file storage
 DONE - Optimize grid size (opt)
-Put dune shape in
-
+DONE - Put dune shape in
+Set dune boundary conditions
+Run dune flow
+Figure out rudimentary sand flow
 
 32 grid - Laptop 1635.011 command line 1458 with new changes
 
