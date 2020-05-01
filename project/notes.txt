@@ -1,0 +1,8 @@
+TODO:
+Automate vis
+Clean up progressmessages
+Optimize grid size (opt)
+Put dune shape in
+
+
+32 grid - Laptop 1635.011 command line
