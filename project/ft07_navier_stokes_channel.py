@@ -5,22 +5,29 @@ Incremental Pressure Correction Scheme (IPCS).
 
   u' + u . nabla(u)) - div(sigma(u, p)) = f
                                  div(u) = 0
-"""
 
+See 1st part of: https://fenicsproject.org/pub/tutorial/html/._ftut1009.html
+"""
+import timeit
+import multiprocessing
+import matplotlib.pyplot as plt
 from fenics import *
 import numpy as np
 from tqdm import tqdm # Way lower overhead than ProgressBar 60ns per iter vs 800ns see github
 
-def main():
+
+
+def navier(grid_size):
+    set_log_level(LogLevel.ERROR)
 
     T = 10.0           # final time
-    num_steps = 500    # number of time steps
+    num_steps = 50    # number of time steps
     dt = T / num_steps # time step size
     mu = 1             # kinematic viscosity
     rho = 1            # density
     
     # Create mesh and define function spaces
-    mesh = UnitSquareMesh(16, 16)
+    mesh = UnitSquareMesh(grid_size, grid_size)
     V = VectorFunctionSpace(mesh, 'P', 2)
     Q = FunctionSpace(mesh, 'P', 1)
     
@@ -127,10 +134,39 @@ def main():
         # Update previous solution
         u_n.assign(u_)
         p_n.assign(p_)
+    
     return error_array,time_array
 
+def navier_benchmark(grid_size):
+    # Run once to get error_array, time_array
+    error_array,time_array = navier(grid_size)
+    
+    # Run with timeit to get average time
+    mysetup = f"""grid_size = {grid_size}
+from ft07_navier_stokes_channel import navier                
+    """
+    mystmt = "navier(grid_size)"
+    t = timeit.timeit(setup = mysetup,stmt = mystmt,number=10)
+    return (t,error_array,time_array)
+
+
 if __name__ == "__main__":
-    import matplotlib.pyplot as plt
-    error,time = main()
 
+    grid_size = np.arange(2,17,2)
 
+    p = multiprocessing.Pool()
+
+    result = p.map(navier_benchmark,grid_size)
+    mapped_results = {grid_size[i]:result[i] for i in range(len(grid_size))}
+    p.close()
+    p.join()
+
+    times =  np.array([i[0] for i in result])
+    errors = np.array([i[1] for i in result])
+    time_arrays = np.array([i[2] for i in result])
+    np.savez("benchmarkout.npz",grid_size,times,errors,time_arrays)
+    plt.figure()
+    plt.scatter(grid_size,times)
+    plt.show()
+    
+    
