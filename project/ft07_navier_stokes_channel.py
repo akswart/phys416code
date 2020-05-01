@@ -21,7 +21,7 @@ def navier(grid_size):
     set_log_level(LogLevel.ERROR)
 
     T = 10.0           # final time
-    num_steps = 50    # number of time steps
+    num_steps = 500    # number of time steps
     dt = T / num_steps # time step size
     mu = 1             # kinematic viscosity
     rho = 1            # density
