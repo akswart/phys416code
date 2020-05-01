@@ -146,17 +146,17 @@ else: # System not recognized
 
 
 print("Starting to solve incompressible Navier–Stokes equations")
-T = 1.0            # final time
-num_steps = 1000   # number of time steps
+T = 5.0            # final time
+num_steps = 10000   # number of time steps
 dt = T / num_steps # time step size
-print(dt)
+print(f"Timestep: {dt}")
 mu = 0.001         # dynamic viscosity
 rho = 1            # density
 
 print("Creating mesh")
 # Create mesh, from dune_mesh
 large_scale = True
-mesh = generate_dune_mesh(large_scale,16)  # True is large scale view, using 16 grid points initaly for fast testing runs
+mesh = generate_dune_mesh(large_scale,64)  # True is large scale view, using 16 grid points initaly for fast testing runs
 #mesh = mshr.generate_mesh(mshr.Rectangle(fs.Point(0, 0), fs.Point(2.2, .41)),16)
 
 # Define function spaces
@@ -173,7 +173,7 @@ if large_scale: # Different boundaries for zoomed out view x=(-4,20) y=(0,10)
     # The dune goes from x(-2,10) y=(0,1)
     # So, if we capture all points in this region and part of a boundary, 
     # we can set the boundary conditions for the dune
-    dune = 'near(x[1], 0) || on_boundary && x[0]>.05 && x[0]<.71 && x[1]>0 && x[1]<.15'
+    dune = 'near(x[1], 0) || on_boundary && x[0]>.02 && x[0]<2 && x[1]>=0 && x[1]<.3'
     
     
 #inflow   = 'near(x[0], 0)' # Inflow and outflow are unchanged
@@ -182,19 +182,19 @@ if large_scale: # Different boundaries for zoomed out view x=(-4,20) y=(0,10)
 #cylinder = 'on_boundary && x[0]>0.1 && x[0]<0.3 && x[1]>0.1 && x[1]<0.3'
 
 # Define inflow profile
-#inflow_profile = ('.015*x[1]*(0.41 - x[1]) / pow(0.41, 2)', '0')
+inflow_profile = ('4.0*1.5*x[1]*(0.41 - x[1]) / pow(0.41, 2)', '0')
 
 # Define boundary conditions
 bcu_walls = fs.DirichletBC(V, fs.Constant((0, 0)), walls)
 bcu_dune = fs.DirichletBC(V, fs.Constant((0, 0)), dune)
 
-#bcu_inflow = fs.DirichletBC(V, fs.Expression(inflow_profile, degree=2), inflow)
+bcu_inflow = fs.DirichletBC(V, fs.Expression(inflow_profile, degree=2), inflow)
 
-bcp_inflow = fs.DirichletBC(Q, fs.Constant(.5), inflow)
+#bcp_inflow = fs.DirichletBC(Q, fs.Constant(.5), inflow)
 bcp_outflow = fs.DirichletBC(Q, fs.Constant(0), outflow)
-bcu = [bcu_walls, bcu_dune]
+bcu = [bcu_inflow,bcu_walls, bcu_dune]
 #bcu = [bcu_inflow,bcu_walls]
-bcp = [bcp_inflow, bcp_outflow]
+bcp = [ bcp_outflow]
 
 # Define trial and test functions
 u = fs.TrialFunction(V)
