@@ -147,7 +147,7 @@ else: # System not recognized
 
 print("Starting to solve incompressible Navier–Stokes equations")
 T = 1.0            # final time
-num_steps = 2000   # number of time steps
+num_steps = 1000   # number of time steps
 dt = T / num_steps # time step size
 print(dt)
 mu = 0.001         # dynamic viscosity
