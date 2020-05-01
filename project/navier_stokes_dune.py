@@ -260,7 +260,7 @@ fs.set_log_level(fs.LogLevel.PROGRESS)
 # Time-stepping
 print("Time Stepping")
 t = 0
-for n in tqdm(range(num_steps)):
+for n in tqdm_gui(range(num_steps)):
 
     fs.set_log_level(fs.LogLevel.ERROR) # Only log explody stuff
     # Update current time
