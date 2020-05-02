@@ -156,7 +156,7 @@ rho = 1            # density
 print("Creating mesh")
 # Create mesh, from dune_mesh
 large_scale = True
-mesh = generate_dune_mesh(large_scale,96)  # True is large scale view, using 16 grid points initaly for fast testing runs
+mesh = generate_dune_mesh(large_scale,64)  # True is large scale view, using 16 grid points initaly for fast testing runs
 #mesh = mshr.generate_mesh(mshr.Rectangle(fs.Point(0, 0), fs.Point(2.2, .41)),16)
 
 # Define function spaces
