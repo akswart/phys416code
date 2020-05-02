@@ -15,6 +15,11 @@ Figure out rudimentary sand flow
 
 Running for T=5, 10000 steps,  grid 64, gave good results 6:30 pm
 running T=5, n=5000, grid 32 on laptop now
+    gave decent results, grid really should be a bit finer
+runniing T=10 n=10000, grid 96 on laptop now done
+running T=5, n=5000, grid32 on laptop with uniform wind now done, results decent
+running T=5 n=10000 grid 64 on laptop now
+
 running T=10, n=20k, grid 64 on phys2 now
 running navier_stokes_channel_benchmark on phys1 now (check param)
 
@@ -28,3 +33,5 @@ writeup planning:
     tallk about gaussian grid
     shoow ddune flow for diff params
     DOONE
+    
+pw barchan
