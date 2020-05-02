@@ -147,7 +147,7 @@ else: # System not recognized
 
 print("Starting to solve incompressible Navier–Stokes equations")
 T = 5.0            # final time
-num_steps = 5000   # number of time steps
+num_steps = 10000   # number of time steps
 dt = T / num_steps # time step size
 print(f"Timestep: {dt}")
 mu = 0.001         # dynamic viscosity
@@ -156,7 +156,7 @@ rho = 1            # density
 print("Creating mesh")
 # Create mesh, from dune_mesh
 large_scale = True
-mesh = generate_dune_mesh(large_scale,32)  # True is large scale view, using 16 grid points initaly for fast testing runs
+mesh = generate_dune_mesh(large_scale,96)  # True is large scale view, using 16 grid points initaly for fast testing runs
 #mesh = mshr.generate_mesh(mshr.Rectangle(fs.Point(0, 0), fs.Point(2.2, .41)),16)
 
 # Define function spaces
@@ -181,8 +181,15 @@ if large_scale: # Different boundaries for zoomed out view x=(-4,20) y=(0,10)
 #walls    = 'near(x[1], 0) || near(x[1], 0.41)'
 #cylinder = 'on_boundary && x[0]>0.1 && x[0]<0.3 && x[1]>0.1 && x[1]<0.3'
 
+
 # Define inflow profile
-inflow_profile = ('4.0*1.5*x[1]*(0.41 - x[1]) / pow(0.41, 2)', '0')
+flow_type = 2
+
+if flow_type == 1:
+    inflow_profile = ('4.0*1.5*x[1]*(0.41 - x[1]) / pow(0.41, 2)', '0') # profiled wind as in Fenics example
+elif flow_type == 2:
+    inflow_profile = ('1', '0') # uniform wind
+
 
 # Define boundary conditions
 bcu_walls = fs.DirichletBC(V, fs.Constant((0, 0)), walls)
