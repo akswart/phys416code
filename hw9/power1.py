@@ -23,8 +23,8 @@ def power1(A,X,eps,max1):
         cnt = cnt+1
         err = np.linalg.norm(xold-xnew)
     
-    if (cnt >=max1):
-        print('error in power2, max number of iterations exceeded')
+    #if (cnt >=max1):
+        #print('error in power2, max number of iterations exceeded')
     
     eigenvector = xnew/np.linalg.norm(xnew)
     lamda = ck
