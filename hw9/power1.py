@@ -31,20 +31,21 @@ def power1(A,X,eps,max1):
 
     return lamda,eigenvector
 
-M=np.array([[2., -1., -1.], [-1., 2., -1], [1., -1., 2]])
-x=np.array([[3.], [2.], [1.]])
-
-eigenvalue,eigenvector = np.linalg.eig(M)
-# get max eigenvalue
-emax = np.max(eigenvalue)
-emax_index = np.argmax(eigenvalue)
-evmax = eigenvector[:,emax_index]
-
-
-eigenvalue1,eigenvector1=power1(M,x,1.0e-3,20)
-
-print('max eigenvalue from numpy eig =',emax)
-print('corresponding eigenvector =',evmax)
-print('max eigenvalue from powermethod =',eigenvalue1)
-print('corresponding eigenvector =',eigenvector1)
+if __name__ == "__main__":
+    M=np.array([[2., -1., -1.], [-1., 2., -1], [1., -1., 2]])
+    x=np.array([[3.], [2.], [1.]])
+    
+    eigenvalue,eigenvector = np.linalg.eig(M)
+    # get max eigenvalue
+    emax = np.max(eigenvalue)
+    emax_index = np.argmax(eigenvalue)
+    evmax = eigenvector[:,emax_index]
+    
+    
+    eigenvalue1,eigenvector1=power1(M,x,1.0e-3,20)
+    
+    print('max eigenvalue from numpy eig =',emax)
+    print('corresponding eigenvector =',evmax)
+    print('max eigenvalue from powermethod =',eigenvalue1)
+    print('corresponding eigenvector =',eigenvector1)
 
